@@ -1,9 +1,11 @@
+import pprint
 from dataclasses import dataclass, field
 
 import nltk
 import numpy as np
 import pke
 import spacy
+import tabulate
 from dss_benchmark.common.preprocess import TextNormalizer, TextSnowballStemmer
 from dss_benchmark.methods import AbstractSimilarityMethod
 from dss_benchmark.methods.keyword_matching.distance import CombinedRatioMatcher
@@ -86,7 +88,7 @@ class KwDistanceMatcherParams:
         default=50,
         metadata={"help": "Шаг окна"},
     )
-    saturate_match: bool = field(
+    kw_saturation: bool = field(
         default=False,
         metadata={"help": "Сопоставление с насыщением"},
     )
@@ -109,8 +111,9 @@ class KwDistanceMatcherParams:
 
 
 class KeywordDistanceMatcher(AbstractSimilarityMethod):
-    def __init__(self, params: KwDistanceMatcherParams):
+    def __init__(self, params: KwDistanceMatcherParams, verbose=False):
         self.params = params
+        self._verbose = verbose
 
         kw_extractor = MultipleExtractor(
             [
@@ -154,12 +157,16 @@ class KeywordDistanceMatcher(AbstractSimilarityMethod):
 
     def _extract_keywords(self, text: str):
         keywords = list(self.kw_pipeline.transform([text]))[0]
+        for kw in keywords:
+            kw["items_num"] = len(kw["meta"]["items"])
+            # kw['items'] = ', '.join([item['v'] for item in kw['meta']['items']])
+            del kw["meta"]
         return keywords
 
     def _match(self, text: str, keywords):
         if len(keywords) == 0:
             return 0.0
-        matcher = CombinedRatioMatcher(keywords)
+        matcher = CombinedRatioMatcher(keywords, verbose=self._verbose)
         results = list(matcher.predict([text.lower()]))[0]
         for i in range(len(results)):
             if results[i] < self.params.kw_cutoff * 100:
@@ -169,9 +176,9 @@ class KeywordDistanceMatcher(AbstractSimilarityMethod):
     def _match_saturated(self, text: str, keywords):
         if len(keywords) == 0:
             return 0.0
-        matcher = CombinedRatioMatcher(keywords)
+        matcher = CombinedRatioMatcher(keywords, verbose=self._verbose)
         results = list(matcher.predict([text.lower()]))[0]
-        results = sorted(results, reverse=True)[: self.params.kw_saturation]
+        results = sorted(results, reverse=True)[: self.params.saturate_value]
         for i in range(len(results)):
             if results[i] < self.params.kw_cutoff * 100:
                 results[i] = 0
@@ -182,9 +189,22 @@ class KeywordDistanceMatcher(AbstractSimilarityMethod):
             text_1, text_2 = text_2, text_1
 
         # TODO кэширование ключевых слов и результатов
-        kw_1 = self._extract_keywords(text_1)
+        kw_1_data = self._extract_keywords(text_1)
 
-        if self.params.saturate_match:
+        if self._verbose:
+            print("\n")
+            print(
+                tabulate.tabulate(
+                    kw_1_data,
+                    headers="keys",
+                    disable_numparse=True,
+                    tablefmt="simple_outline",
+                )
+            )
+
+        kw_1 = [kw["value"] for kw in kw_1_data]
+
+        if self.params.kw_saturation:
             return self._match_saturated(text_2, kw_1)
         else:
             return self._match(text_2, kw_1)
