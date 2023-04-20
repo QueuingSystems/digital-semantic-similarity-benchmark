@@ -9,10 +9,7 @@ import tabulate
 from dss_benchmark.common import EmptyMapping
 from dss_benchmark.common.preprocess import TextNormalizer, TextSnowballStemmer
 from dss_benchmark.methods import AbstractSimilarityMethod
-from dss_benchmark.methods.keyword_matching.distance import (
-    CombinedRatioMatcher,
-    CombinedRatioMatcherCache,
-)
+from dss_benchmark.methods.keyword_matching.distance import CombinedRatioMatcherCache
 from dss_benchmark.methods.keyword_matching.keywords import (
     KeywordsClusterNew,
     KeywordsExcludeBlacklist,
@@ -158,7 +155,7 @@ class KeywordDistanceMatcher(AbstractSimilarityMethod):
             source_selection=["YAKE", "PositionRank", "SingleRank"],
         )
 
-        self.kw_pipeline = Pipeline(
+        self._kw_pipeline = Pipeline(
             [
                 ("extract", extractor),
                 ("russian", russian),
@@ -168,7 +165,7 @@ class KeywordDistanceMatcher(AbstractSimilarityMethod):
         )
 
     def _extract_keywords_do(self, text: str):
-        keywords = list(self.kw_pipeline.transform([text]))[0]
+        keywords = list(self._kw_pipeline.transform([text]))[0]
         for kw in keywords:
             kw["items_num"] = len(kw["meta"]["items"])
             # kw['items'] = ', '.join([item['v'] for item in kw['meta']['items']])
