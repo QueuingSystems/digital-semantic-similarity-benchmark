@@ -1,14 +1,18 @@
-import pprint
 from dataclasses import dataclass, field
 
+import cachetools
 import nltk
 import numpy as np
 import pke
 import spacy
 import tabulate
+from dss_benchmark.common import EmptyMapping
 from dss_benchmark.common.preprocess import TextNormalizer, TextSnowballStemmer
 from dss_benchmark.methods import AbstractSimilarityMethod
-from dss_benchmark.methods.keyword_matching.distance import CombinedRatioMatcher
+from dss_benchmark.methods.keyword_matching.distance import (
+    CombinedRatioMatcher,
+    CombinedRatioMatcherCache,
+)
 from dss_benchmark.methods.keyword_matching.keywords import (
     KeywordsClusterNew,
     KeywordsExcludeBlacklist,
@@ -111,8 +115,16 @@ class KwDistanceMatcherParams:
 
 
 class KeywordDistanceMatcher(AbstractSimilarityMethod):
-    def __init__(self, params: KwDistanceMatcherParams, verbose=False):
+    def __init__(
+        self,
+        params: KwDistanceMatcherParams,
+        verbose=False,
+        cache: cachetools.Cache = None,
+    ):
         self.params = params
+        if cache is None:
+            cache = EmptyMapping()
+        self._cache = cache
         self._verbose = verbose
 
         kw_extractor = MultipleExtractor(
@@ -155,7 +167,7 @@ class KeywordDistanceMatcher(AbstractSimilarityMethod):
             ]
         )
 
-    def _extract_keywords(self, text: str):
+    def _extract_keywords_do(self, text: str):
         keywords = list(self.kw_pipeline.transform([text]))[0]
         for kw in keywords:
             kw["items_num"] = len(kw["meta"]["items"])
@@ -163,10 +175,29 @@ class KeywordDistanceMatcher(AbstractSimilarityMethod):
             del kw["meta"]
         return keywords
 
+    def _extract_keywords(self, text: str):
+        values = [
+            "kw",
+            text,
+            str(self.params.is_window),
+            str(self.params.dbscan_eps),
+        ]
+        if self.params.is_window:
+            values.extend([str(self.params.window_size), str(self.params.window_delta)])
+        key = "---".join(values)
+        cached = self._cache.get(key)
+        if cached:
+            return cached
+        keywords = self._extract_keywords_do(text)
+        self._cache[key] = keywords
+        return keywords
+
     def _match(self, text: str, keywords):
         if len(keywords) == 0:
             return 0.0
-        matcher = CombinedRatioMatcher(keywords, verbose=self._verbose)
+        matcher = CombinedRatioMatcherCache(
+            keywords, verbose=self._verbose, cache=self._cache
+        )
         results = list(matcher.predict([text.lower()]))[0]
         for i in range(len(results)):
             if results[i] < self.params.kw_cutoff * 100:
@@ -176,7 +207,9 @@ class KeywordDistanceMatcher(AbstractSimilarityMethod):
     def _match_saturated(self, text: str, keywords):
         if len(keywords) == 0:
             return 0.0
-        matcher = CombinedRatioMatcher(keywords, verbose=self._verbose)
+        matcher = CombinedRatioMatcherCache(
+            keywords, verbose=self._verbose, cache=self._cache
+        )
         results = list(matcher.predict([text.lower()]))[0]
         results = sorted(results, reverse=True)[: self.params.saturate_value]
         for i in range(len(results)):
@@ -187,8 +220,6 @@ class KeywordDistanceMatcher(AbstractSimilarityMethod):
     def match(self, text_1: str, text_2: str) -> float:
         if self.params.swap_texts:
             text_1, text_2 = text_2, text_1
-
-        # TODO кэширование ключевых слов и результатов
         kw_1_data = self._extract_keywords(text_1)
 
         if self._verbose:
