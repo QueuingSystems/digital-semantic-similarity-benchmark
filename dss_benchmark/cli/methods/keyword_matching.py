@@ -10,7 +10,7 @@ __all__ = ["kwm"]
 
 
 @click.group(
-    "keyword_matching", help="Методы: Сопоставление текстов через ключевые слова"
+    "keyword-matching", help="Методы: Сопоставление текстов через ключевые слова"
 )
 def kwm():
     pass

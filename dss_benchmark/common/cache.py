@@ -3,7 +3,7 @@ import pickle
 
 import redis
 
-__all__ = ["EmptyMapping", "RedisCache"]
+__all__ = ["EmptyMapping", "RedisCache", "init_cache"]
 
 
 class EmptyMapping(collections.abc.MutableMapping):
@@ -78,3 +78,11 @@ class RedisCache(collections.abc.MutableMapping):
     @staticmethod
     def serialize(value) -> bytes:
         return pickle.dumps(value)
+
+def init_cache():
+    try:
+        cache = RedisCache(client=redis.Redis(host="localhost", password="12345"))
+    except Exception:
+        print("Cannot initialize redis")
+        cache = cachetools.LFUCache(2**16)
+    return cache

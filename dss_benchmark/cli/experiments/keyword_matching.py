@@ -1,10 +1,13 @@
-import cachetools
 import click
 import pandas as pd
-import redis
-from dss_benchmark.common import RedisCache, parse_arbitrary_arguments, print_dataclass
-from dss_benchmark.experiments import DATASETS, kwm_match, load_dataset
-from dss_benchmark.experiments.common import confusion_matrix, f1_score
+from dss_benchmark.common import parse_arbitrary_arguments, print_dataclass, init_cache
+from dss_benchmark.experiments import (
+    DATASETS,
+    confusion_matrix,
+    f1_score,
+    kwm_match,
+    load_dataset,
+)
 from dss_benchmark.methods.keyword_matching import (
     KeywordDistanceMatcher,
     KwDistanceMatcherParams,
@@ -13,17 +16,8 @@ from dss_benchmark.methods.keyword_matching import (
 __all__ = ["kwme"]
 
 
-def _init_cache():
-    try:
-        cache = RedisCache(client=redis.Redis(host="localhost", password="12345"))
-    except Exception:
-        print("Cannot initialize redis")
-        cache = cachetools.LFUCache(2**16)
-    return cache
-
-
 @click.group(
-    "keyword_matching_exp",
+    "keyword-matching-exp",
     help="Эксперименты: Сопоставление текстов через ключевые слова",
 )
 def kwme():
@@ -46,7 +40,7 @@ def kwme():
 )
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def match(dataset_name, cutoff, args):
-    cache = _init_cache()
+    cache = init_cache()
     dataset = load_dataset(dataset_name)
     kwargs = parse_arbitrary_arguments(args)
     params = KwDistanceMatcherParams(**kwargs)
