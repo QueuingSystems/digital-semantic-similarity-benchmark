@@ -1,6 +1,7 @@
 import collections.abc
 import pickle
 
+import cachetools
 import redis
 
 __all__ = ["EmptyMapping", "RedisCache", "init_cache"]
@@ -33,7 +34,7 @@ class RedisCache(collections.abc.MutableMapping):
         self.__namespace = namespace
         self.client = client or redis.Redis()
         if client.ping() is not True:
-            raise Exception('Cannot ping Redis')
+            raise Exception("Cannot ping Redis")
 
     def __getitem__(self, key: str):
         try:
@@ -59,7 +60,7 @@ class RedisCache(collections.abc.MutableMapping):
 
     def __iter__(self):
         for key in self.client.scan_iter(match=self.__namespace + "*"):
-            yield key.decode('utf-8')[len(self.__namespace):]
+            yield key.decode("utf-8")[len(self.__namespace) :]
 
     def __len__(self):
         return len(self.client.keys(pattern=self.__namespace + "*"))
@@ -78,6 +79,7 @@ class RedisCache(collections.abc.MutableMapping):
     @staticmethod
     def serialize(value) -> bytes:
         return pickle.dumps(value)
+
 
 def init_cache():
     try:
