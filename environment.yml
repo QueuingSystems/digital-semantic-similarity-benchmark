@@ -109,7 +109,7 @@ dependencies:
   - xz=5.2.6=h166bdaf_0
   - zlib=1.2.13=h166bdaf_4
   - pip:
-    - git+https://github.com/boudinfl/pke.git@5af1f817e0211c33ac3f90e1e86bb5c1283448e8
+    - git+https://github.com/boudinfl/pke.git@ebd6e5754b4156a61a4ec6c4c283e821d11a36be
     - jarowinkler==1.0.2
     - jedi==0.18.2
     - parso==0.8.3
