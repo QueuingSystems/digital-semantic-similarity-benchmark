@@ -1,5 +1,6 @@
 import collections.abc
 import pickle
+from typing import Union
 
 import cachetools
 import redis
@@ -81,7 +82,13 @@ class RedisCache(collections.abc.MutableMapping):
         return pickle.dumps(value)
 
 
-def init_cache():
+def init_cache(kind: Union[str, None] = None):
+    if kind == "redis":
+        return RedisCache(client=redis.Redis(host="localhost", password="12345"))
+    elif kind == "memory":
+        return cachetools.LFUCache(2**16)
+    elif kind == 'dummy':
+        return EmptyMapping()
     try:
         cache = RedisCache(client=redis.Redis(host="localhost", password="12345"))
     except Exception:

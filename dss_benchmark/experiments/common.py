@@ -2,6 +2,9 @@ import json
 from dataclasses import dataclass
 from typing import List
 
+import numpy as np
+from sklearn import metrics
+
 __all__ = [
     "Datum",
     "load_dataset",
@@ -9,10 +12,11 @@ __all__ = [
     "ResultDatum",
     "confusion_matrix",
     "f1_score",
+    "process_roc_auc"
 ]
 
 
-DATASETS = ["rpd_dataset"]
+DATASETS = ["rpd_dataset", "all_examples"]
 
 
 @dataclass
@@ -32,8 +36,8 @@ class ResultDatum:
 
 
 def load_dataset(name: str) -> List[Datum]:
-    if name == "rpd_dataset":
-        with open("./data/rpd_dataset.json", "r") as f:
+    if name == "rpd_dataset" or name == "all_examples":
+        with open(f"./data/{name}.json", "r") as f:
             data = json.load(f)
         return [
             Datum(
@@ -64,3 +68,14 @@ def confusion_matrix(results: List[ResultDatum]):
 
 def f1_score(tp: int, fp: int, fn: int):
     return (2 * tp) / (2 * tp + fp + fn)
+
+
+def process_roc_auc(dataset: List[Datum], results: List[ResultDatum]):
+    y_true = [int(datum.need_match) for datum in dataset]
+    y_score = [datum.value for datum in results]
+
+    fpr, tpr, thresholds = metrics.roc_curve(y_true, y_score)
+    cutoff = thresholds[np.argmax(tpr - fpr)]
+    auc = metrics.auc(fpr, tpr)
+
+    return fpr, tpr, cutoff, auc
