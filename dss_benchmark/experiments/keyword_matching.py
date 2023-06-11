@@ -92,7 +92,7 @@ def _get_results(dataset: List[Datum], results: List[ResultDatum]):
     }
 
 
-def kwm_experiment(dataset: List[Datum], results_folder: str, verbose=False):
+def _kwm_try_1(dataset: List[Datum], results_folder: str, verbose=False):
     base_1 = KwDistanceMatcherParams(
         is_window=False, kw_saturation=True, swap_texts=False
     )
@@ -130,3 +130,141 @@ def kwm_experiment(dataset: List[Datum], results_folder: str, verbose=False):
     ax.legend()
     ax.grid(0.25)
     fig.savefig(f"{results_folder}/kwm_1_auc.png")
+
+
+def _kwm_try_2(dataset: List[Datum], results_folder: str, verbose=False):
+    base_2 = KwDistanceMatcherParams(
+        is_window=True, kw_saturation=True, swap_texts=False
+    )
+    data_2 = []
+    for window_size in tqdm_v([170, 400, 500, 700], verbose=verbose):
+        base_2.window_size = window_size
+        for kw_cutoff in np.linspace(0, 1, 20):
+            base_2.kw_cutoff = kw_cutoff
+            result = kwm_match_parallel(base_2, 0, dataset, verbose=False)
+            data_2.append(
+                {
+                    **_get_results(dataset, result),
+                    "kw_cutoff": kw_cutoff,
+                    "window_size": window_size,
+                }
+            )
+    df_2 = pd.DataFrame(data_2)
+    df_2.to_csv(f"{results_folder}/kwm_2.csv", index=False)
+    # df_2 = pd.read_csv(f"{results_folder}/kwm_2.csv")
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    groups = df_2[["auc", "kw_cutoff", "window_size"]].groupby("window_size")
+    for _, group in groups:
+        group = group.reset_index()
+        group[["auc", "kw_cutoff", "window_size"]].plot(
+            x="kw_cutoff",
+            y="auc",
+            kind="line",
+            ax=ax,
+            label=f"Window size={group['window_size'][0]}",
+        )
+    ax.set_xlabel("Keyword cutoff")
+    ax.set_ylabel("AUC")
+    ax.set_title(
+        "is_window=True, kw_saturation=True, swap_texts=False, dbscan_eps=0.95"
+    )
+    ax.legend()
+    ax.grid(0.25)
+    fig.savefig(f"{results_folder}/kwm_2_auc.png")
+
+
+def _kwm_try_3(dataset: List[Datum], results_folder: str, verbose=False):
+    base_3 = KwDistanceMatcherParams(
+        is_window=True, kw_saturation=True, swap_texts=True
+    )
+    data_3 = []
+    for window_size in tqdm_v([170, 300, 400, 500, 700], verbose=verbose):
+        base_3.window_size = window_size
+        for kw_cutoff in np.linspace(0, 1, 20):
+            base_3.kw_cutoff = kw_cutoff
+            result = kwm_match_parallel(base_3, 0, dataset, verbose=False)
+            data_3.append(
+                {
+                    **_get_results(dataset, result),
+                    "kw_cutoff": kw_cutoff,
+                    "window_size": window_size,
+                }
+            )
+    df_3 = pd.DataFrame(data_3)
+    df_3.to_csv(f"{results_folder}/kwm_3.csv", index=False)
+    # df_3 = pd.read_csv(f"{results_folder}/kwm_3.csv")
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    groups = df_3[["auc", "kw_cutoff", "window_size"]].groupby("window_size")
+    for _, group in groups:
+        group = group.reset_index()
+        group[["auc", "kw_cutoff", "window_size"]].plot(
+            x="kw_cutoff",
+            y="auc",
+            kind="line",
+            ax=ax,
+            label=f"Window size={group['window_size'][0]}",
+        )
+    ax.set_xlabel("Keyword cutoff")
+    ax.set_ylabel("AUC")
+    ax.set_title("is_window=True, kw_saturation=True, swap_texts=True, dbscan_eps=0.95")
+    ax.legend()
+    ax.grid(0.25)
+    fig.savefig(f"{results_folder}/kwm_3_auc.png")
+
+
+def _kwm_try_agg(dataset: List[Datum], results_folder: str, verbose=False):
+    options = [
+        (
+            KwDistanceMatcherParams(
+                is_window=False,
+                kw_saturation=True,
+                swap_texts=False,
+                dbscan_eps=0.8,
+                kw_cutoff=0,
+            ),
+            "is_window=False, swap_texts=False",
+        ),
+        (
+            KwDistanceMatcherParams(
+                is_window=True,
+                window_size=700,
+                kw_saturation=True,
+                swap_texts=False,
+                dbscan_eps=0.95,
+                kw_cutoff=0.79,
+            ),
+            "is_window=True, swap_texts=False",
+        ),
+        (
+            KwDistanceMatcherParams(
+                is_window=True,
+                window_size=400,
+                kw_saturation=True,
+                swap_texts=True,
+                dbscan_eps=0.95,
+                kw_cutoff=0,
+            ),
+            "is_window=True, swap_texts=True",
+        ),
+    ]
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+    for param, title in options:
+        result = kwm_match_parallel(param, 0, dataset, verbose=False)
+        fpr, tpr, cutoff, auc = process_roc_auc(dataset, result)
+        ax.plot(fpr, tpr, label=f"{title} (AUC={auc:.3f}, cutoff={cutoff:.1f})")
+
+    ax.set_xlabel("False positive rate")
+    ax.set_ylabel("True positive rate")
+    ax.set_title("Keyword matcher ROC curves")
+    ax.legend(loc="lower right")
+    ax.grid(0.25)
+    fig.savefig(f"{results_folder}/kwm_agg_auc.png")
+
+
+def kwm_experiment(dataset: List[Datum], results_folder: str, verbose=False):
+    _kwm_try_1(dataset, results_folder, verbose)
+    _kwm_try_2(dataset, results_folder, verbose)
+    _kwm_try_3(dataset, results_folder, verbose)
+    _kwm_try_agg(dataset, results_folder, verbose)
