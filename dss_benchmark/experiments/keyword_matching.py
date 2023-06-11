@@ -17,6 +17,7 @@ from .common import (
     ResultDatum,
     confusion_matrix,
     f1_score,
+    process_auprc,
     process_f1_score,
     process_roc_auc,
 )
@@ -83,16 +84,22 @@ def _get_results(dataset: List[Datum], results: List[ResultDatum]):
     tp, fp, fn, tn = confusion_matrix(results)
     auc_f1 = f1_score(tp, fp, fn)
     f1, cutoff = process_f1_score(results)
+
+    _, _, auprc, auprc_cutoff, auprc_f1 = process_auprc(dataset, results)
+
     return {
         "auc": auc,
         "auc_cutoff": auc_cutoff,
         "auc_f1": auc_f1,
         "f1": f1,
         "f1_cutoff": cutoff,
+        "auprc": auprc,
+        "auprc_cutoff": auprc_cutoff,
+        "auprc_f1": auprc_f1,
     }
 
 
-def _kwm_try_1(dataset: List[Datum], results_folder: str, verbose=False):
+def _kwm_try_1(dataset: List[Datum], results_folder: str, key="auc", verbose=False):
     base_1 = KwDistanceMatcherParams(
         is_window=False, kw_saturation=True, swap_texts=False
     )
@@ -114,25 +121,25 @@ def _kwm_try_1(dataset: List[Datum], results_folder: str, verbose=False):
     # df_1 = pd.read_csv(f"{results_folder}/kwm_1.csv")
 
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-    groups = df_1[["auc", "kw_cutoff", "dbscan_eps"]].groupby("dbscan_eps")
+    groups = df_1[[key, "kw_cutoff", "dbscan_eps"]].groupby("dbscan_eps")
     for _, group in groups:
         group = group.reset_index()
-        group[["auc", "kw_cutoff", "dbscan_eps"]].plot(
+        group[[key, "kw_cutoff", "dbscan_eps"]].plot(
             x="kw_cutoff",
-            y="auc",
+            y=key,
             kind="line",
             ax=ax,
             label=f"DBSCAN eps={group['dbscan_eps'][0]:.2f}",
         )
     ax.set_xlabel("Keyword cutoff")
-    ax.set_ylabel("AUC")
+    ax.set_ylabel(key)
     ax.set_title("is_window=False, kw_saturation=True, swap_texts=False")
     ax.legend()
     ax.grid(0.25)
-    fig.savefig(f"{results_folder}/kwm_1_auc.png")
+    fig.savefig(f"{results_folder}/kwm_1_{key}.png")
 
 
-def _kwm_try_2(dataset: List[Datum], results_folder: str, verbose=False):
+def _kwm_try_2(dataset: List[Datum], results_folder: str, key="auc", verbose=False):
     base_2 = KwDistanceMatcherParams(
         is_window=True, kw_saturation=True, swap_texts=False
     )
@@ -154,27 +161,27 @@ def _kwm_try_2(dataset: List[Datum], results_folder: str, verbose=False):
     # df_2 = pd.read_csv(f"{results_folder}/kwm_2.csv")
 
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-    groups = df_2[["auc", "kw_cutoff", "window_size"]].groupby("window_size")
+    groups = df_2[[key, "kw_cutoff", "window_size"]].groupby("window_size")
     for _, group in groups:
         group = group.reset_index()
-        group[["auc", "kw_cutoff", "window_size"]].plot(
+        group[[key, "kw_cutoff", "window_size"]].plot(
             x="kw_cutoff",
-            y="auc",
+            y=key,
             kind="line",
             ax=ax,
             label=f"Window size={group['window_size'][0]}",
         )
     ax.set_xlabel("Keyword cutoff")
-    ax.set_ylabel("AUC")
+    ax.set_ylabel(key)
     ax.set_title(
         "is_window=True, kw_saturation=True, swap_texts=False, dbscan_eps=0.95"
     )
     ax.legend()
     ax.grid(0.25)
-    fig.savefig(f"{results_folder}/kwm_2_auc.png")
+    fig.savefig(f"{results_folder}/kwm_2_{key}.png")
 
 
-def _kwm_try_3(dataset: List[Datum], results_folder: str, verbose=False):
+def _kwm_try_3(dataset: List[Datum], results_folder: str, key="auc", verbose=False):
     base_3 = KwDistanceMatcherParams(
         is_window=True, kw_saturation=True, swap_texts=True
     )
@@ -196,25 +203,25 @@ def _kwm_try_3(dataset: List[Datum], results_folder: str, verbose=False):
     # df_3 = pd.read_csv(f"{results_folder}/kwm_3.csv")
 
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-    groups = df_3[["auc", "kw_cutoff", "window_size"]].groupby("window_size")
+    groups = df_3[[key, "kw_cutoff", "window_size"]].groupby("window_size")
     for _, group in groups:
         group = group.reset_index()
-        group[["auc", "kw_cutoff", "window_size"]].plot(
+        group[[key, "kw_cutoff", "window_size"]].plot(
             x="kw_cutoff",
-            y="auc",
+            y=key,
             kind="line",
             ax=ax,
             label=f"Window size={group['window_size'][0]}",
         )
     ax.set_xlabel("Keyword cutoff")
-    ax.set_ylabel("AUC")
+    ax.set_ylabel(key)
     ax.set_title("is_window=True, kw_saturation=True, swap_texts=True, dbscan_eps=0.95")
     ax.legend()
     ax.grid(0.25)
-    fig.savefig(f"{results_folder}/kwm_3_auc.png")
+    fig.savefig(f"{results_folder}/kwm_3_{key}.png")
 
 
-def _kwm_try_agg(dataset: List[Datum], results_folder: str, verbose=False):
+def _kwm_roc_curve(dataset: List[Datum], results_folder: str, verbose=False):
     options = [
         (
             KwDistanceMatcherParams(
@@ -263,8 +270,14 @@ def _kwm_try_agg(dataset: List[Datum], results_folder: str, verbose=False):
     fig.savefig(f"{results_folder}/kwm_agg_auc.png")
 
 
-def kwm_experiment(dataset: List[Datum], results_folder: str, verbose=False):
-    _kwm_try_1(dataset, results_folder, verbose)
-    _kwm_try_2(dataset, results_folder, verbose)
-    _kwm_try_3(dataset, results_folder, verbose)
-    _kwm_try_agg(dataset, results_folder, verbose)
+def kwm_experiment(
+    dataset: List[Datum], dataset_name: str, results_folder: str, verbose=False
+):
+    key = 'auc'
+    if dataset_name == 'studentor_partner':
+        key = 'auprc'
+    _kwm_try_1(dataset, results_folder, key, verbose)
+    _kwm_try_2(dataset, results_folder, key, verbose)
+    _kwm_try_3(dataset, results_folder, key, verbose)
+    if dataset_name == 'studentor_partner':
+        _kwm_roc_curve(dataset, results_folder, verbose)

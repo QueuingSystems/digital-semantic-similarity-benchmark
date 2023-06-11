@@ -19,6 +19,7 @@ from dss_benchmark.experiments import (
     process_f1_score,
     process_roc_auc,
 )
+from dss_benchmark.experiments.common import process_auprc
 from dss_benchmark.experiments.keyword_matching import kwm_experiment
 from dss_benchmark.methods.keyword_matching import (
     KeywordDistanceMatcher,
@@ -116,6 +117,9 @@ def match_auc(dataset_name, csv_path, args):
     f1 = f1_score(tp, fp, fn)
     print(f"AUC: {auc:.4f} (cutoff: {auc_cutoff:.4f}, F1: {f1:.4f})")
 
+    _, _, auprc, auprc_cutoff, auprc_f1 = process_auprc(dataset, results)
+    print(f'AUPRC: {auprc:.4f} (cutoff: {auprc_cutoff:.4f}, F1: {auprc_f1:.4f})')
+
     f1, cutoff = process_f1_score(results)
     for r in results:
         r.match = r.value >= cutoff
@@ -135,6 +139,9 @@ def match_auc(dataset_name, csv_path, args):
             **dataclasses.asdict(params),
             "auc": auc,
             "auc_cutoff": auc_cutoff,
+            "auprc": auprc,
+            "auprc_cutoff": auprc_cutoff,
+            "auprc_f1": auprc_f1,
             "f1": f1,
             "cutoff": cutoff,
             "tp": tp,
@@ -165,4 +172,4 @@ def match_exp(dataset_name, results_folder):
         results_folder = f"_output/kwm_exp_{dataset_name}"
     if not os.path.exists(results_folder):
         os.makedirs(results_folder)
-    kwm_experiment(dataset, results_folder, True)
+    kwm_experiment(dataset, dataset_name, results_folder, True)

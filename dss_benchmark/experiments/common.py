@@ -15,6 +15,7 @@ __all__ = [
     "f1_score",
     "process_roc_auc",
     "process_f1_score",
+    "process_auprc"
 ]
 
 
@@ -96,6 +97,20 @@ def process_roc_auc(dataset: List[Datum], results: List[ResultDatum]):
     auc = metrics.auc(fpr, tpr)
 
     return fpr, tpr, cutoff, auc
+
+def process_auprc(dataset: List[Datum], results: List[ResultDatum]):
+    y_true = [int(datum.need_match) for datum in dataset]
+    y_score = [datum.value for datum in results]
+
+    precision, recall, thresholds = metrics.precision_recall_curve(y_true, y_score)
+    auprc = metrics.auc(recall, precision)
+
+    f_score = 2 * precision * recall / (precision + recall)
+    best_f_score_idx = np.argmax(f_score)
+    best_f_score = f_score[best_f_score_idx]
+    best_cutoff = thresholds[best_f_score_idx]
+
+    return precision, recall, auprc, best_cutoff, best_f_score
 
 
 def process_f1_score(results: List[ResultDatum]):
