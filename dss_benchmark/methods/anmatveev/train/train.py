@@ -3,6 +3,7 @@ from dss_benchmark.common import EmptyMapping
 import pandas as pd
 import cachetools
 import gensim
+from dss_benchmark.common import *
 
 @dataclass
 class TrainModelParams:
@@ -102,6 +103,17 @@ class TrainModelManager:
             cache = EmptyMapping()
         self._cache = cache
         self._verbose = verbose
+    
+    def preprocess_and_save(self, data_df: pd.DataFrame, path, text_field='text') -> pd.DataFrame:
+        # for preprocessing dataset. Use it only in critical cases cause it's too slow on big datasets
+        data_df['preprocessed_' + text_field] = data_df.apply(
+            lambda row: preprocess(row[text_field], punctuation_marks, stop_words, morph), axis=1)
+        data_df_preprocessed = data_df.copy()
+        data_df_preprocessed = data_df_preprocessed.drop(columns=[text_field], axis=1)
+        data_df_preprocessed.reset_index(drop=True, inplace=True)
+        if path is not None:
+            data_df_preprocessed.to_json(path)
+        return data_df_preprocessed
     
     def train(self, data_df, params, model="word2vec", model_path="../../../models/"):
         if model == "word2vec":
