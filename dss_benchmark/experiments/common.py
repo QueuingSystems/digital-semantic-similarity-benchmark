@@ -1,3 +1,4 @@
+import csv
 import json
 from dataclasses import dataclass
 from typing import List
@@ -12,11 +13,12 @@ __all__ = [
     "ResultDatum",
     "confusion_matrix",
     "f1_score",
-    "process_roc_auc"
+    "process_roc_auc",
+    "process_f1_score",
 ]
 
 
-DATASETS = ["rpd_dataset", "all_examples"]
+DATASETS = ["rpd_dataset", "all_examples", "studentor_partner"]
 
 
 @dataclass
@@ -49,6 +51,21 @@ def load_dataset(name: str) -> List[Datum]:
             )
             for datum in data
         ]
+    if name == 'studentor_partner':
+        with open (f"./data/{name}.csv", "r") as f:
+            reader = csv.DictReader(f)
+            data = list(reader)
+        return [
+            Datum(
+                text_1=datum["text_1"],
+                text_2=datum["text_2"],
+                title_1=datum["title_1"],
+                title_2=datum["title_2"],
+                need_match=datum["need_match"] == 'TRUE'
+            )
+            for datum in data
+        ]
+
     raise ValueError(f"Unknown dataset: {name}")
 
 
@@ -79,3 +96,18 @@ def process_roc_auc(dataset: List[Datum], results: List[ResultDatum]):
     auc = metrics.auc(fpr, tpr)
 
     return fpr, tpr, cutoff, auc
+
+
+def process_f1_score(results: List[ResultDatum]):
+    cutoff_values = np.linspace(0, 100, 1000)
+    f1_values = []
+    for i in cutoff_values:
+        for result in results:
+            result.match = result.value >= i
+        tp, fp, fn, tn = confusion_matrix(results)
+        f1 = f1_score(tp, fp, fn)
+        f1_values.append(f1)
+    best_f1_idx = np.argmax(f1_values)
+    best_f1 = f1_values[best_f1_idx]
+    best_cutoff = cutoff_values[best_f1_idx]
+    return best_f1, best_cutoff

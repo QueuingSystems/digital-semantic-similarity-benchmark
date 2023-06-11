@@ -3,8 +3,7 @@ from multiprocessing.pool import Pool
 from multiprocessing.process import current_process
 from typing import List
 
-from dss_benchmark.common import tqdm_v
-from dss_benchmark.common.cache import init_cache
+from dss_benchmark.common import tqdm_v, init_cache
 from dss_benchmark.methods.keyword_matching import (
     KeywordDistanceMatcher,
     KwDistanceMatcherParams,
