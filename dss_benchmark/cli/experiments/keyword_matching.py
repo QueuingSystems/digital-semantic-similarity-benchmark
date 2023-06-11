@@ -1,4 +1,5 @@
 import dataclasses
+import os
 
 import click
 import pandas as pd
@@ -15,9 +16,10 @@ from dss_benchmark.experiments import (
     kwm_match,
     kwm_match_parallel,
     load_dataset,
+    process_f1_score,
     process_roc_auc,
-    process_f1_score
 )
+from dss_benchmark.experiments.keyword_matching import kwm_experiment
 from dss_benchmark.methods.keyword_matching import (
     KeywordDistanceMatcher,
     KwDistanceMatcherParams,
@@ -114,7 +116,6 @@ def match_auc(dataset_name, csv_path, args):
     f1 = f1_score(tp, fp, fn)
     print(f"AUC: {auc:.4f} (cutoff: {auc_cutoff:.4f}, F1: {f1:.4f})")
 
-
     f1, cutoff = process_f1_score(results)
     for r in results:
         r.match = r.value >= cutoff
@@ -122,13 +123,11 @@ def match_auc(dataset_name, csv_path, args):
     tp, fp, fn, tn = confusion_matrix(results)
     f1 = f1_score(tp, fp, fn)
 
-    print(f'F1: {f1:.4f} (cutoff: {cutoff:.4f})')
+    print(f"F1: {f1:.4f} (cutoff: {cutoff:.4f})")
 
     print(f"TP: {str(tp):3s} FP: {str(fp):3s}")
     print(f"FN: {str(fn):3s} TN: {str(tn):3s}")
-    print(
-        "precision: {tp / (tp + fp):.4f}, recall: {tp / (tp + fn):.4f}"
-    )
+    print(f"precision: {tp / (tp + fp):.4f}, recall: {tp / (tp + fn):.4f}")
     append_to_csv(
         csv_path,
         {
@@ -146,3 +145,24 @@ def match_auc(dataset_name, csv_path, args):
             "recall": tp / (tp + fn),
         },
     )
+
+
+@kwme.command(
+    help="Провести эксперимент с подбором параметров",
+    context_settings=dict(ignore_unknown_options=True),
+)
+@click.option(
+    "-d", "--dataset-name", type=click.Choice(DATASETS), required=True, prompt=True
+)
+@click.option(
+    "-r",
+    "--results-folder",
+    type=click.Path(dir_okay=True),
+)
+def match_exp(dataset_name, results_folder):
+    dataset = load_dataset(dataset_name)
+    if results_folder is None:
+        results_folder = f"_output/kwm_exp_{dataset_name}"
+    if not os.path.exists(results_folder):
+        os.makedirs(results_folder)
+    kwm_experiment(dataset, results_folder, True)
