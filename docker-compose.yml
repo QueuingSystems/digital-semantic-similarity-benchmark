@@ -1,0 +1,24 @@
+version: "3.5"
+name: 'digital-semantic-similairity-benchmark'
+
+services:
+  redis:
+    image: 'bitnami/redis:latest'
+    hostname: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=12345
+
+  redis_commander:
+    image: 'ghcr.io/joeferner/redis-commander:0.8.1'
+    hostname: redis-commander
+    restart: unless-stopped
+    environment:
+      - PORT=8010
+      - REDIS_HOST=redis
+      - REDIS_HOSTS=local:redis:6379
+      - REDIS_PASSWORD=12345
+    ports:
+      - "8010:8010"
