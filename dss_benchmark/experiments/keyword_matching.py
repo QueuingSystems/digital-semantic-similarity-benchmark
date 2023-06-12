@@ -1,11 +1,13 @@
+import dataclasses
 import time
 from multiprocessing.pool import Pool
 from multiprocessing.process import current_process
-from typing import List
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
 from dss_benchmark.common import init_cache, tqdm_v
+from dss_benchmark.common.dataclass_utils import print_dataclass
 from dss_benchmark.methods.keyword_matching import (
     KeywordDistanceMatcher,
     KwDistanceMatcherParams,
@@ -138,6 +140,11 @@ def _kwm_try_1(dataset: List[Datum], results_folder: str, key="auc", verbose=Fal
     ax.grid(0.25)
     fig.savefig(f"{results_folder}/kwm_1_{key}.png")
 
+    best_datum = df_1.iloc[df_1[key].idxmax()]
+    base_1.dbscan_eps = best_datum["dbscan_eps"]
+    base_1.kw_cutoff = best_datum["kw_cutoff"]
+    return base_1, best_datum
+
 
 def _kwm_try_2(dataset: List[Datum], results_folder: str, key="auc", verbose=False):
     base_2 = KwDistanceMatcherParams(
@@ -180,6 +187,11 @@ def _kwm_try_2(dataset: List[Datum], results_folder: str, key="auc", verbose=Fal
     ax.grid(0.25)
     fig.savefig(f"{results_folder}/kwm_2_{key}.png")
 
+    best_datum = df_2.iloc[df_2[key].idxmax()]
+    base_2.window_size = best_datum["window_size"]
+    base_2.kw_cutoff = best_datum["kw_cutoff"]
+    return base_2, best_datum
+
 
 def _kwm_try_3(dataset: List[Datum], results_folder: str, key="auc", verbose=False):
     base_3 = KwDistanceMatcherParams(
@@ -220,41 +232,21 @@ def _kwm_try_3(dataset: List[Datum], results_folder: str, key="auc", verbose=Fal
     ax.grid(0.25)
     fig.savefig(f"{results_folder}/kwm_3_{key}.png")
 
+    best_datum = df_3.iloc[df_3[key].idxmax()]
+    base_3.window_size = best_datum["window_size"]
+    base_3.kw_cutoff = best_datum["kw_cutoff"]
+    return base_3, best_datum
 
-def _kwm_roc_curve(dataset: List[Datum], results_folder: str, verbose=False):
+
+def _kwm_roc_curve(
+    dataset: List[Datum],
+    params: List[KwDistanceMatcherParams],
+    results_folder: str,
+    verbose=False,
+):
     options = [
-        (
-            KwDistanceMatcherParams(
-                is_window=False,
-                kw_saturation=True,
-                swap_texts=False,
-                dbscan_eps=0.8,
-                kw_cutoff=0,
-            ),
-            "is_window=False, swap_texts=False",
-        ),
-        (
-            KwDistanceMatcherParams(
-                is_window=True,
-                window_size=700,
-                kw_saturation=True,
-                swap_texts=False,
-                dbscan_eps=0.95,
-                kw_cutoff=0.79,
-            ),
-            "is_window=True, swap_texts=False",
-        ),
-        (
-            KwDistanceMatcherParams(
-                is_window=True,
-                window_size=400,
-                kw_saturation=True,
-                swap_texts=True,
-                dbscan_eps=0.95,
-                kw_cutoff=0,
-            ),
-            "is_window=True, swap_texts=True",
-        ),
+        (param, f"is_window={param.is_window}, swap_texts={param.swap_texts}")
+        for param in params
     ]
     fig, ax = plt.subplots(1, 1, figsize=(8, 6))
     for param, title in options:
@@ -270,14 +262,55 @@ def _kwm_roc_curve(dataset: List[Datum], results_folder: str, verbose=False):
     fig.savefig(f"{results_folder}/kwm_agg_auc.png")
 
 
+def _kwm_auprc_curve(
+    dataset: List[Datum],
+    params: List[KwDistanceMatcherParams],
+    results_folder: str,
+    verbose=False,
+):
+    options = [
+        (param, f"is_window={param.is_window}, swap_texts={param.swap_texts}")
+        for param in params
+    ]
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+    for param, title in options:
+        results = kwm_match_parallel(param, 0, dataset, verbose=False)
+        precision, recall, auprc, auprc_cutoff, auprc_f1 = process_auprc(
+            dataset, results
+        )
+        ax.plot(recall, precision, label=f"{title} (AUPRC={auprc:.3f})")
+
+    ax.set_xlabel("Recall")
+    ax.set_ylabel("Precision")
+    ax.set_title("Keyword matcher AUPRC curves")
+    ax.legend()
+    ax.grid(0.25)
+    fig.savefig(f"{results_folder}/kwm_agg_auprc.png")
+
+
 def kwm_experiment(
     dataset: List[Datum], dataset_name: str, results_folder: str, verbose=False
 ):
-    key = 'auc'
-    if dataset_name == 'studentor_partner':
-        key = 'auprc'
-    _kwm_try_1(dataset, results_folder, key, verbose)
-    _kwm_try_2(dataset, results_folder, key, verbose)
-    _kwm_try_3(dataset, results_folder, key, verbose)
-    if dataset_name == 'studentor_partner':
-        _kwm_roc_curve(dataset, results_folder, verbose)
+    key = "auc"
+    if dataset_name == "studentor_partner":
+        key = "auprc"
+    best_1, datum_1 = _kwm_try_1(dataset, results_folder, key, verbose)
+    best_2, datum_2 = _kwm_try_2(dataset, results_folder, key, verbose)
+    best_3, datum_3 = _kwm_try_3(dataset, results_folder, key, verbose)
+    params = [best_1, best_2, best_3]
+    data = [datum_1, datum_2, datum_3]
+    best_values = []
+    for param, datum in zip(params, data):
+        if verbose:
+            print_dataclass(param)
+            print(datum)
+        value = {**dataclasses.asdict(param), **datum.to_dict()}
+        best_values.append(value)
+
+    df = pd.DataFrame(best_values)
+    df.to_csv(f"{results_folder}/kwm_best.csv", index=False)
+
+    if dataset_name == "studentor_partner":
+        _kwm_auprc_curve(dataset, params, results_folder, verbose)
+    else:
+        _kwm_roc_curve(dataset, params, results_folder, verbose)
