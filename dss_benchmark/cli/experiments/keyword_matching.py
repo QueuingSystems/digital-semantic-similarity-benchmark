@@ -20,7 +20,7 @@ from dss_benchmark.experiments import (
     process_roc_auc,
 )
 from dss_benchmark.experiments.common import process_auprc
-from dss_benchmark.experiments.keyword_matching import kwm_experiment
+from dss_benchmark.experiments.keyword_matching import kwm_experiment, kwm_measure_timings, kwm_process_timings, kwm_test_mprof
 from dss_benchmark.methods.keyword_matching import (
     KeywordDistanceMatcher,
     KwDistanceMatcherParams,
@@ -156,7 +156,6 @@ def match_auc(dataset_name, csv_path, args):
 
 @kwme.command(
     help="Провести эксперимент с подбором параметров",
-    context_settings=dict(ignore_unknown_options=True),
 )
 @click.option(
     "-d", "--dataset-name", type=click.Choice(DATASETS), required=True, prompt=True
@@ -173,3 +172,28 @@ def match_exp(dataset_name, results_folder):
     if not os.path.exists(results_folder):
         os.makedirs(results_folder)
     kwm_experiment(dataset, dataset_name, results_folder, True)
+
+
+@kwme.command(
+    help="Провести эксперимент с временем",
+)
+def timings():
+    kwm_measure_timings(True)
+
+
+@kwme.command(
+    help='Обработать результаты эксперимента со временем',
+)
+def timings_process():
+    kwm_process_timings()
+
+
+@kwme.command(
+    help="Запуск для mprof",
+)
+@click.option(
+    '--parallel/--no-parallel',
+    default=True,
+)
+def test_mprof(parallel):
+    kwm_test_mprof(parallel, True)

@@ -2,7 +2,7 @@ import dataclasses
 import time
 from multiprocessing.pool import Pool
 from multiprocessing.process import current_process
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import numpy as np
 import pandas as pd
@@ -19,12 +19,20 @@ from .common import (
     ResultDatum,
     confusion_matrix,
     f1_score,
+    load_dataset,
     process_auprc,
     process_f1_score,
     process_roc_auc,
 )
 
-__all__ = ["kwm_match", "kwm_match_parallel", "kwm_experiment"]
+__all__ = [
+    "kwm_match",
+    "kwm_match_parallel",
+    "kwm_experiment",
+    "kwm_measure_timings",
+    "kwm_process_timings",
+    "kwm_test_mprof",
+]
 
 
 def kwm_match(
@@ -37,10 +45,10 @@ def kwm_match(
     return result
 
 
-def _kwm_match_parallel_init(params, verbose_, cutoff_):
+def _kwm_match_parallel_init(params, verbose_, cutoff_, cache_kind=None):
     global matcher, cutoff, verbose
     verbose = verbose_
-    cache = init_cache()
+    cache = init_cache(cache_kind)
     matcher = KeywordDistanceMatcher(params, False, cache)
     cutoff = cutoff_
     if verbose:
@@ -62,13 +70,17 @@ def _kwm_match_task(datum: Datum):
 
 
 def kwm_match_parallel(
-    params: KwDistanceMatcherParams, cutoff, dataset: List[Datum], verbose=False
+    params: KwDistanceMatcherParams,
+    cutoff,
+    dataset: List[Datum],
+    verbose=False,
+    cache_kind: Union[str, None] = None,
 ):
     result: List[ResultDatum] = []
 
     with Pool(
         initializer=_kwm_match_parallel_init,
-        initargs=(params, verbose, cutoff),
+        initargs=(params, verbose, cutoff, cache_kind),
     ) as pool:
         for datum in tqdm_v(
             pool.map(_kwm_match_task, dataset),
@@ -314,3 +326,190 @@ def kwm_experiment(
         _kwm_auprc_curve(dataset, params, results_folder, verbose)
     else:
         _kwm_roc_curve(dataset, params, results_folder, verbose)
+
+
+def _kwm_get_big_dataset(verbose=False, one_student=False):
+    dataset_studentor = load_dataset("studentor_partner")
+    unique_resumes = list(set([datum.text_2 for datum in dataset_studentor]))
+
+    if one_student:
+        unique_resumes = unique_resumes[:1]
+
+    dataset_examples = load_dataset("all_examples")
+    unique_vacancies = list(
+        set(
+            [
+                *[datum.text_2 for datum in dataset_examples],
+                *[datum.text_1 for datum in dataset_studentor],
+            ]
+        )
+    )
+    if verbose:
+        print("Unique resumes:", len(unique_resumes))
+        print("Unique vacancies:", len(unique_vacancies))
+
+    big_dataset: List[Datum] = []
+    for i, resume in enumerate(unique_resumes):
+        for j, vacancy in enumerate(unique_vacancies):
+            big_dataset.append(
+                Datum(
+                    text_1=resume,
+                    text_2=vacancy,
+                    title_1=f"Resume {i}",
+                    title_2=f"Vacancy {j}",
+                    need_match=True,
+                )
+            )
+    if verbose:
+        print("Big dataset size:", len(big_dataset))
+    return big_dataset
+
+
+def _kwm_measure_time_on_dataset(
+    matcher: KeywordDistanceMatcher, big_dataset: List[Datum], verbose=False
+):
+    times_data = []
+    for datum in tqdm_v(big_dataset, verbose=verbose):
+        start, process_start = time.time(), time.process_time()
+        matcher.match(datum.text_1, datum.text_2)
+        end, process_end = time.time(), time.process_time()
+        times_data.append(
+            {
+                "time": end - start,
+                "process_time": process_end - process_start,
+                "text_1_len": len(datum.text_1),
+                "text_2_len": len(datum.text_2),
+            }
+        )
+    df = pd.DataFrame(times_data)
+    return df
+
+
+def kwm_process_timings():
+    df_no_cache = pd.read_csv("_output/kwm_times_no_cache.csv")
+    df_cached = pd.read_csv("_output/kwm_times_cached.csv")
+    df_changed_vacancy = pd.read_csv("_output/kwm_times_no_cache_changed_vacancy.csv")
+    df_changed_resume = pd.read_csv("_output/kwm_times_no_cache_changed_resume.csv")
+    df_swapped = pd.read_csv("_output/kwm_times_no_cache_swapped.csv")
+
+    avg_no_cache_process_time = df_no_cache["process_time"].mean()
+    avg_cached_process_time = df_cached["process_time"].mean()
+    avg_no_cache_process_time_per_one_match = avg_no_cache_process_time / len(df_cached)
+    avg_cached_process_time_per_one_match = avg_cached_process_time / len(df_cached)
+
+    print("Avg process time without cache: ", round(avg_no_cache_process_time, 5))
+    print("Avg process time with cache: ", round(avg_cached_process_time, 5))
+    print(
+        "Avg process time without cache per one match: ",
+        round(avg_no_cache_process_time_per_one_match, 5),
+    )
+    print(
+        "Avg process time with cache per one match: ",
+        round(avg_cached_process_time_per_one_match, 5),
+    )
+
+    avg_changed_vacancy_process_time = df_changed_vacancy["process_time"].mean()
+    avg_changed_resume_process_time = df_changed_resume["process_time"].mean()
+    avg_changed_vacancy_process_time_per_one_match = (
+        avg_changed_vacancy_process_time / len(df_changed_vacancy)
+    )
+    avg_changed_resume_process_time_per_one_match = (
+        avg_changed_resume_process_time / len(df_changed_resume)
+    )
+
+    print(
+        "Avg process time without cache per one match (changed vacancy): ",
+        round(avg_changed_vacancy_process_time_per_one_match, 5),
+    )
+    print(
+        "Avg process time without cache per one match (changed resume): ",
+        round(avg_changed_resume_process_time_per_one_match, 5),
+    )
+
+    avg_swapped_process_time = df_swapped["process_time"].mean()
+    avg_swapped_process_time_per_one_match = avg_swapped_process_time / len(df_swapped)
+
+    print(
+        "Avg process time without cache (swapped): ",
+        round(avg_swapped_process_time, 5),
+    )
+    print(
+        "Avg process time without cache per one match (swapped): ",
+        round(avg_swapped_process_time_per_one_match, 5),
+    )
+
+    fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+    df_no_cache[["process_time", "text_2_len"]].plot(
+        ax=ax,
+        x="text_2_len",
+        y="process_time",
+        label="No cache",
+        kind="scatter",
+        logx=True,
+        title="Process time vs vacancy length",
+    )
+    fig.savefig("_output/kwm_times_no_cache_text_2.png")
+
+    fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+    df_swapped[["process_time", "text_1_len"]].plot(
+        ax=ax,
+        x="text_1_len",
+        y="process_time",
+        label="No cache",
+        kind="scatter",
+        logx=True,
+        title="Process time vs resume length",
+    )
+    fig.savefig("_output/kwm_times_no_cache_text_1.png")
+
+
+
+def kwm_measure_timings(verbose=False):
+    big_dataset = _kwm_get_big_dataset(verbose=verbose, one_student=True)
+
+    default_params = KwDistanceMatcherParams(
+        is_window=True, kw_saturation=True, swap_texts=True
+    )
+    cache = init_cache("memory")
+    matcher = KeywordDistanceMatcher(default_params, False, cache)
+
+    df_no_cache = _kwm_measure_time_on_dataset(matcher, big_dataset, verbose)
+    df_no_cache.to_csv("_output/kwm_times_no_cache.csv", index=False)
+
+    df_cached = _kwm_measure_time_on_dataset(matcher, big_dataset, verbose)
+    df_cached.to_csv("_output/kwm_times_cached.csv", index=False)
+
+    big_dataset[
+        0
+    ].text_2 += ". Этот текст был изменен, чтобы проверить скорость пересчёта"
+    df_changed_vacancy = _kwm_measure_time_on_dataset(matcher, big_dataset, verbose)
+    df_changed_vacancy.to_csv(
+        "_output/kwm_times_no_cache_changed_vacancy.csv", index=False
+    )
+
+    for datum in big_dataset:
+        datum.text_1 += ". Этот текст был изменен, чтобы проверить скорость пересчёта"
+    df_changed_resume = _kwm_measure_time_on_dataset(matcher, big_dataset, verbose)
+    df_changed_resume.to_csv(
+        "_output/kwm_times_no_cache_changed_resume.csv", index=False
+    )
+
+    big_dataset_swapped = []
+    for datum in big_dataset:
+        big_dataset_swapped.append(
+            Datum(text_1=datum.text_2, text_2=datum.text_1, title_1=datum.title_2, title_2=datum.title_1, need_match=datum.need_match)
+        )
+    df_swapped = _kwm_measure_time_on_dataset(matcher, big_dataset_swapped, verbose)
+    df_swapped.to_csv("_output/kwm_times_no_cache_swapped.csv", index=False)
+
+
+def kwm_test_mprof(parallel=False, verbose=False):
+    big_dataset = _kwm_get_big_dataset(verbose=verbose, one_student=True)
+    default_params = KwDistanceMatcherParams(
+        is_window=True, kw_saturation=True, swap_texts=True
+    )
+    if parallel:
+        kwm_match_parallel(default_params, 0, big_dataset, verbose, 'memory')
+    else:
+        matcher = KeywordDistanceMatcher(default_params, False, init_cache("memory"))
+        kwm_match(matcher, 0, big_dataset, verbose)
