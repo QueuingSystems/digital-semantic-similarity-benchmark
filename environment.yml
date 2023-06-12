@@ -125,6 +125,7 @@ dependencies:
   - markupsafe=2.1.2=py39h72bdee0_0
   - matplotlib=3.7.1=py39hf3d152e_0
   - matplotlib-base=3.7.1=py39he190548_0
+  - memory_profiler=0.61.0=pyhd8ed1ab_0
   - mpg123=1.31.3=hcb278e6_0
   - multiprocess=0.70.14=py39hb9d737c_3
   - munkres=1.1.4=pyh9f0ad1d_0
@@ -151,6 +152,7 @@ dependencies:
   - ply=3.11=py_1
   - pooch=1.7.0=pyha770c72_3
   - preshed=3.0.8=py39h5a03fae_1
+  - psutil=5.9.5=py39h72bdee0_0
   - pthread-stubs=0.4=h36c2ea0_1001
   - pulseaudio=16.1=hcb278e6_3
   - pulseaudio-client=16.1=h5195f5e_3
