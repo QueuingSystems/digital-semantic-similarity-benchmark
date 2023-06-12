@@ -394,48 +394,27 @@ def kwm_process_timings():
 
     avg_no_cache_process_time = df_no_cache["process_time"].mean()
     avg_cached_process_time = df_cached["process_time"].mean()
-    avg_no_cache_process_time_per_one_match = avg_no_cache_process_time / len(df_cached)
-    avg_cached_process_time_per_one_match = avg_cached_process_time / len(df_cached)
 
     print("Avg process time without cache: ", round(avg_no_cache_process_time, 5))
     print("Avg process time with cache: ", round(avg_cached_process_time, 5))
-    print(
-        "Avg process time without cache per one match: ",
-        round(avg_no_cache_process_time_per_one_match, 5),
-    )
-    print(
-        "Avg process time with cache per one match: ",
-        round(avg_cached_process_time_per_one_match, 5),
-    )
 
     avg_changed_vacancy_process_time = df_changed_vacancy["process_time"].mean()
     avg_changed_resume_process_time = df_changed_resume["process_time"].mean()
-    avg_changed_vacancy_process_time_per_one_match = (
-        avg_changed_vacancy_process_time / len(df_changed_vacancy)
-    )
-    avg_changed_resume_process_time_per_one_match = (
-        avg_changed_resume_process_time / len(df_changed_resume)
-    )
 
     print(
-        "Avg process time without cache per one match (changed vacancy): ",
-        round(avg_changed_vacancy_process_time_per_one_match, 5),
+        "Avg process time without cache (changed vacancy): ",
+        round(avg_changed_vacancy_process_time, 5),
     )
     print(
-        "Avg process time without cache per one match (changed resume): ",
-        round(avg_changed_resume_process_time_per_one_match, 5),
+        "Avg process time without cache (changed resume): ",
+        round(avg_changed_resume_process_time, 5),
     )
 
     avg_swapped_process_time = df_swapped["process_time"].mean()
-    avg_swapped_process_time_per_one_match = avg_swapped_process_time / len(df_swapped)
 
     print(
         "Avg process time without cache (swapped): ",
         round(avg_swapped_process_time, 5),
-    )
-    print(
-        "Avg process time without cache per one match (swapped): ",
-        round(avg_swapped_process_time_per_one_match, 5),
     )
 
     fig, ax = plt.subplots(1, 1, figsize=(6, 6))
