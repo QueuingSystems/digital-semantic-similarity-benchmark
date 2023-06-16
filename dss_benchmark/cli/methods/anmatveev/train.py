@@ -29,7 +29,6 @@ def train_model(model_name, args):
     kwargs = parse_arbitrary_arguments(args)
     params = TrainModelParams(**kwargs)
     print_dataclass(params)
-
     manager = TrainModelManager(params)
 
 
@@ -37,15 +36,16 @@ def train_model(model_name, args):
     help="Обучить неглубокую модель", context_settings=dict(ignore_unknown_options=True)
 )
 @click.option("-mn", "--model_name", required=True, type=str, help="Идентификатор модели", prompt=True)
+# --text тоже обязательный аргумент - путь к файлу
 @click.argument(
     "args", nargs=-1, type=click.UNPROCESSED
 )
 def train_model(model_name, args):
+    print(model_name)
     kwargs = parse_arbitrary_arguments(args)
     params = TrainModelParams(**kwargs)
-    print_dataclass(params)
-
     manager = TrainModelManager(params)
+    manager.train()
 
 
 @trn.command(
@@ -57,7 +57,6 @@ def train_model(model_name, args):
 )
 def preprocess_dataset(path, args):
     manager = TrainModelManager()
-    print(path)
     try:
         data = pd.read_json(path)
         new_path = path.replace('.json', '_preprocessed.json')

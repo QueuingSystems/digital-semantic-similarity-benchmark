@@ -4,6 +4,7 @@ import pandas as pd
 import cachetools
 import gensim
 from dss_benchmark.common import *
+from timeit import default_timer as timer
 
 @dataclass
 class TrainModelParams:
@@ -115,16 +116,40 @@ class TrainModelManager:
             data_df_preprocessed.to_json(path)
         return data_df_preprocessed
     
-    def train(self, data_df, params, model="word2vec", model_path="../../../models/"):
+    def train(self,  model="word2vec", model_path="models/"):
+        print(self.params, model)
         if model == "word2vec":
-            train_part = data_df['preprocessed_texts']
-            self.model = gensim.models.Word2Vec(sentences=train_part, min_count=5, vector_size=50, epochs=10)
+            train_part = pd.read_json(self.params.texts)['preprocessed_text']
+            start = timer()
+            self.model = gensim.models.Word2Vec(sentences=train_part,
+                                                vector_size=self.params.vector_size,
+                                                window=self.params.window,
+                                                min_count=self.params.min_count,
+                                                max_vocab_size=self.params.max_vocab_size,
+                                                alpha=self.params.alpha,
+                                                sample=self.params.sample,
+                                                seed=self.params.seed,
+                                                workers=self.params.workers,
+                                                min_alpha=self.params.min_alpha,
+                                                sg=self.params.sg,
+                                                hs=self.params.hs,
+                                                negative=self.params.negative,
+                                                ns_exponent=self.params.ns_exponent,
+                                                cbow_mean=self.params.cbow_mean,
+                                                epochs=self.params.epochs,
+                                                sorted_vocab=self.params.sorted_vocab,
+                                                batch_words=self.params.batch_words,
+                                                compute_loss=self.params.compute_loss,
+                                                max_final_vocab=self.params.max_final_vocab,
+                                                shrink_windows=self.params.shrink_windows)
+
+            print(f'Training {model} time: {round(timer() - start, 3)} secs')
             self.model.save(model_path + model)
-        elif model == "fastText":
-            train_part = data_df['preprocessed_texts']
-            self.model = gensim.models.FastText(sentences=train_part, min_count=5, vector_size=50, epochs=10)
-            self.model.save(model_path + model)
-        return
+        # elif model == "fastText":
+        #     train_part = data_df['preprocessed_texts']
+        #     self.model = gensim.models.FastText(sentences=train_part, min_count=5, vector_size=50, epochs=10)
+        #     self.model.save(model_path + model)
+        # return
 
     
 
