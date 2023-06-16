@@ -41,11 +41,10 @@ def train_model(model_name, args):
     "args", nargs=-1, type=click.UNPROCESSED
 )
 def train_model(model_name, args):
-    print(model_name)
     kwargs = parse_arbitrary_arguments(args)
     params = TrainModelParams(**kwargs)
     manager = TrainModelManager(params)
-    manager.train()
+    manager.train(model=model_name)
 
 
 @trn.command(

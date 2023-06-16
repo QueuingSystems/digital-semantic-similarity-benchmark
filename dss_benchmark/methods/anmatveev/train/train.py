@@ -27,6 +27,10 @@ class TrainModelParams:
         default=None,
         metadata={"help": "Ограничивает оперативную память при построении словаря; None - нет ограничений"}
     )
+    word_ngrams:int = field(
+        default=1,
+        metadata={"help": "Максимальная длина словарной n-граммы, но Gensim поддерживает только n-грамму длины 1"}
+    )
     alpha:float = field(
         default=0.025,
         metadata={"help": "Начальная скорость обучения"}
@@ -91,6 +95,18 @@ class TrainModelParams:
         default=True,
         metadata={"help": "Если установлено значение True, эффективный размер окна равномерно выбирается"}
     )
+    min_n:int = field(
+        default=3,
+        metadata={"help": "Минимальная длина символьных n-грамм"}
+    )
+    max_n:int = field(
+        default=6,
+        metadata={"help": "Максимальная длина n-грамм, которые будут использоваться для обучения пр-ю слов"}
+    )
+    bucket:int = field(
+        default=2000000,
+        metadata={"help": "N-граммы хэшируются в фикс. число buckets для ограничения памяти"}
+    )
 
 
 class TrainModelManager:
@@ -118,9 +134,9 @@ class TrainModelManager:
     
     def train(self,  model="word2vec", model_path="models/"):
         print(self.params, model)
+        start = timer()
+        train_part = pd.read_json(self.params.texts)['preprocessed_text']
         if model == "word2vec":
-            train_part = pd.read_json(self.params.texts)['preprocessed_text']
-            start = timer()
             self.model = gensim.models.Word2Vec(sentences=train_part,
                                                 vector_size=self.params.vector_size,
                                                 window=self.params.window,
@@ -143,12 +159,27 @@ class TrainModelManager:
                                                 max_final_vocab=self.params.max_final_vocab,
                                                 shrink_windows=self.params.shrink_windows)
 
-            print(f'Training {model} time: {round(timer() - start, 3)} secs')
-            self.model.save(model_path + model)
-        # elif model == "fastText":
-        #     train_part = data_df['preprocessed_texts']
-        #     self.model = gensim.models.FastText(sentences=train_part, min_count=5, vector_size=50, epochs=10)
-        #     self.model.save(model_path + model)
+        elif model == "fastText":
+            self.model = gensim.models.FastText(sentences=train_part,
+                                                sg=self.params.sg,
+                                                hs=self.params.hs,
+                                                vector_size=self.params.vector_size,
+                                                alpha=self.params.alpha,
+                                                window=self.params.window,
+                                                min_count=self.params.min_count,
+                                                max_vocab_size=self.params.max_vocab_size,
+                                                ns_exponent= self.params.ns_exponent,
+                                                cbow_mean=self.params.cbow_mean,
+                                                epochs=self.params.epochs,
+                                                min_n=self.params.min_n,
+                                                max_n=self.params.max_n,
+                                                sorted_vocab=self.params.sorted_vocab,
+                                                bucket=self.params.bucket,
+                                                batch_words=self.params.batch_words,
+                                                max_final_vocab=self.params.max_final_vocab,
+                                                shrink_windows=self.params.shrink_windows)
+        print(f'Training {model} time: {round(timer() - start, 3)} secs')
+        self.model.save(model_path + model)
         # return
 
     
