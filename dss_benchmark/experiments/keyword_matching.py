@@ -416,10 +416,10 @@ def kwm_process_timings():
         "Avg process time without cache (swapped): ",
         round(avg_swapped_process_time, 5),
     )
-
-    fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+    plt.rcParams['savefig.dpi'] = 300
+    fig, [ax1, ax2] = plt.subplots(1, 2, figsize=(8, 4))
     df_no_cache[["process_time", "text_2_len"]].plot(
-        ax=ax,
+        ax=ax1,
         x="text_2_len",
         y="process_time",
         label="No cache",
@@ -427,11 +427,11 @@ def kwm_process_timings():
         logx=True,
         title="Process time vs vacancy length",
     )
-    fig.savefig("_output/kwm_times_no_cache_text_2.png")
+    # fig.savefig("_output/kwm_times_no_cache_text_2.png")
 
-    fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+    # fig, ax = plt.subplots(1, 1, figsize=(6, 6))
     df_swapped[["process_time", "text_1_len"]].plot(
-        ax=ax,
+        ax=ax2,
         x="text_1_len",
         y="process_time",
         label="No cache",
@@ -439,7 +439,12 @@ def kwm_process_timings():
         logx=True,
         title="Process time vs resume length",
     )
-    fig.savefig("_output/kwm_times_no_cache_text_1.png")
+    plt.tight_layout()
+    for ax in [ax1, ax2]:
+        ax.get_legend().set_visible(False)
+        ax.grid(0.25)
+        ax.set_axisbelow(True)
+    fig.savefig("_output/kwm_times_no_cache.png")
 
 
 
