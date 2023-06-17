@@ -9,6 +9,7 @@ from timeit import default_timer as timer
 @dataclass
 class TrainModelParams:
     texts:str = field(
+         default=None,
          metadata={"help": "Обучающий набор (путь к файлу)"}
     )
     vector_size:int = field(

@@ -22,27 +22,15 @@ def params():
     help="Обучить неглубокую модель", context_settings=dict(ignore_unknown_options=True)
 )
 @click.option("-mn", "--model_name", required=True, type=str, help="Идентификатор модели", prompt=True)
-@click.argument(
-    "args", nargs=-1, type=click.UNPROCESSED
-)
-def train_model(model_name, args):
-    kwargs = parse_arbitrary_arguments(args)
-    params = TrainModelParams(**kwargs)
-    print_dataclass(params)
-    manager = TrainModelManager(params)
-
-
-@trn.command(
-    help="Обучить неглубокую модель", context_settings=dict(ignore_unknown_options=True)
-)
-@click.option("-mn", "--model_name", required=True, type=str, help="Идентификатор модели", prompt=True)
 # --text тоже обязательный аргумент - путь к файлу
+@click.option("-t", "--text", required=True, type=str, help="Путь к файлу", prompt=True)
 @click.argument(
     "args", nargs=-1, type=click.UNPROCESSED
 )
-def train_model(model_name, args):
+def train_model(model_name, text, args):
     kwargs = parse_arbitrary_arguments(args)
     params = TrainModelParams(**kwargs)
+    params.texts = text
     manager = TrainModelManager(params)
     manager.train(model=model_name)
 
