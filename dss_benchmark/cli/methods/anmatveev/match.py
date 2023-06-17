@@ -19,7 +19,10 @@ def mch():
 )
 @click.option("-mp", "--model_path", required=True, type=str, help="Путь к модели", prompt=True)
 @click.option("-t", "--texts", required=True, type=str, help="Путь к бенчмарку", prompt=True)
-def max_f1(model_path, texts):
+@click.argument(
+    "args", nargs=-1, type=click.UNPROCESSED
+)
+def max_f1(model_path, texts, args):
     manager = MatchManager()
     manager.load_model(model_path)
     benchmark = pd.read_json(texts)
