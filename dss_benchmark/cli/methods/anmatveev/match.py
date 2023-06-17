@@ -6,7 +6,6 @@ from dss_benchmark.methods.anmatveev.match.match import (
     MatchManager
 )
 
-image_path = "images/"
 
 @click.group(
     "match", help="Сопоставление и исследование"
@@ -22,11 +21,10 @@ def mch():
 @click.option("-t", "--texts", required=True, type=str, help="Путь к бенчмарку", prompt=True)
 def max_f1(model_path, texts):
     manager = MatchManager()
-    manager.set_model(model_path)
+    manager.load_model(model_path)
     benchmark = pd.read_json(texts)
-    preprocessed = manager.preprocess_and_save_pairs(benchmark, 'text_rp', 'text_proj')
-    res = manager.max_f1(preprocessed['preprocessed_text_rp'],
-                         preprocessed['preprocessed_text_proj'],
-                         preprocessed,
+    res = manager.max_f1(benchmark['text_rp'],
+                         benchmark['text_proj'],
+                         benchmark,
                          model_path)
     print(res)

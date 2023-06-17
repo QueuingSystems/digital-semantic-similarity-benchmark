@@ -7,9 +7,13 @@ import pymorphy2
 from nltk import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
 
+image_path = "images/"
+gensim_models = ["word2vec", "fastText"]
+transformer_models = ["paraphrase-multilingual-MiniLM-L12-v2", "rubert-base-cased"]
 punctuation_marks = ['!', ',', '(', ')', ';', ':', '-', '?', '.', '..', '...', "\"", "/", "\`\`", "»", "«"]
 stop_words = stopwords.words("russian")
 morph = pymorphy2.MorphAnalyzer()
+
 
 def preprocess(text: str, stop_words, punctuation_marks, morph):
     tokens = word_tokenize(text.lower())
@@ -97,11 +101,9 @@ def max_f1_score(sim, df, step=0.02):
     for i in steps:
         score = calc_f1_score(sim, df, i)
         scores.append(score)
-        # print('CURREMT', i, score)
         if score > f1_score:
             f1_score = score
             cutoff = i
-            # print('UPDATE', cutoff, f1_score)
     return steps, scores, f1_score, round(cutoff, 3)
 
 

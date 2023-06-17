@@ -6,26 +6,23 @@ import gensim.models as models
 from dss_benchmark.common import *
 from timeit import default_timer as timer
 import numpy as np
+from dss_benchmark.methods import AbstractSimilarityMethod
 from dss_benchmark.common.preprocess.anmatveev.common import *
+from sentence_transformers import SentenceTransformer
 import matplotlib.pyplot as plt
 import pymorphy2
 from nltk.corpus import stopwords
 from pathlib import Path
 
-image_path = "images/"
 fontsize = 18
 plt.rcParams.update({'font.size': fontsize})
 plt.rcParams['figure.dpi'] = 300
-punctuation_marks = ['!', ',', '(', ')', ';', ':', '-', '?', '.', '..', '...', "\"", "/", "\`\`", "»", "«"]
-stop_words = stopwords.words("russian")
-morph = pymorphy2.MorphAnalyzer()
-model_types = []
 redis_port = 0
 redis_host = '-'
 line_thickness = 3
 
 
-class MatchManager:
+class MatchManager(AbstractSimilarityMethod):
     def __init__(self,
                  verbose=False,
                  cache: cachetools.Cache = None):
@@ -33,7 +30,8 @@ class MatchManager:
             cache = EmptyMapping()
         self._cache = cache
         self._verbose = verbose
-        self.models = {}
+        self._models = {}
+        self._current_model = {}
 
     def preprocess_and_save_pairs(self, data_df: pd.DataFrame, text_field_1, text_field_2):
         data_df_preprocessed = data_df.copy()
@@ -45,53 +43,60 @@ class MatchManager:
         data_df_preprocessed.reset_index(drop=True, inplace=True)
         return data_df_preprocessed
 
-    def set_model(self, model_path):
-        self.models[model_path] = models.ldamodel.LdaModel.load(model_path)
+    def load_model(self, model_path):
+        self._models[model_path] = models.ldamodel.LdaModel.load(model_path)
 
-    def predict_sim_gensim(self, sentences_1, sentences_2, model_path):
-        self.model = self.models[model_path]
-        if sentences_1.size != sentences_2.size:
-            return None
-        else:
-            if self.model is not None:
-                sentences_sim = np.zeros(sentences_1.size)
-                sz = sentences_1.size
-                sentences_1_words, sentences_2_words = None, None
-                for i in range(sz):
-                    if 'word2vec' in model_path:
-                        sentences_1_words = [w for w in sentences_1[i] if w in self.model.wv.index_to_key]
-                        sentences_2_words = [w for w in sentences_2[i] if w in self.model.wv.index_to_key]
-                    elif 'fastText' in model_path:
-                        sentences_1_words = sentences_1[i]
-                        sentences_2_words = sentences_2[i]
+    def set_current_model(self, model_path):
+        self._current_model['model'] = self._models[model_path]
+        self._current_model['path'] = model_path
 
-                    sim = self.model.wv.n_similarity(sentences_1_words, sentences_2_words)
-                    sentences_sim[i] = sim
+    def match(self, text_1: str, text_2: str) -> float:
+        if Path(self._current_model['path']).stem in gensim_models:
+            text_1 = preprocess(text_1, punctuation_marks, stop_words, morph)
+            text_2 = preprocess(text_2, punctuation_marks, stop_words, morph)
+            text_1 = [w for w in text_1 if w in self._current_model['model'].wv.index_to_key]
+            text_2 = [w for w in text_2 if w in self._current_model['model'].wv.index_to_key]
+            return self._current_model['model'].wv.n_similarity(text_1, text_2)
+        elif Path(self._current_model['path']).stem in transformer_models:
+            text_1 = sent_preprocess(text_1)
+            text_2 = sent_preprocess(text_2)
 
-                return list(sentences_sim)
-            else:
-                return None
+            def comp(e):
+                return e['cos_sim']
+
+            text_2_embeddings = []
+            for sent_2 in text_2:
+                text_2_embeddings += [self._current_model['model'].encode(sent_2, convert_to_tensor=True)]
+
+            max_sims = []
+            for sent_1 in text_1:
+                text_1_embedding = self._current_model['model'].encode(sent_1, convert_to_tensor=True)
+                sim = []
+                for i in range(len(text_2_embeddings)):
+                    sim += [{'proj': text_2[i],
+                             'cos_sim': float(sentence_transformers.util.cos_sim(text_1_embedding,
+                                                                                 text_2_embeddings[i]))
+                             }]
+
+                max_sims.append(max(sim, key=comp)['cos_sim'])
+                value = float(np.round(np.mean(max_sims), round_number))
+            return value
+
 
     def max_f1(self, sentences_1, sentences_2, df, model_path, step=0.02):
         if sentences_1.size != sentences_2.size:
             return None
         else:
-            threshold = 0
-            thresholds = []
-            f1_score = 0
-            h = step
-            steps = np.linspace(0, 1, num=int(1 / h))
-            steps = np.round(steps, 2)
             sim = []
-            try:
-                sim = self.predict_sim_gensim(sentences_1, sentences_2, model_path)
-            except Exception:
-                pass
-                # for i in range(len(sentences_1)):
-                #     sim += [self.predict_transfomer_two_texts(sentences_1[i], sentences_2[i], model_name=model_name)]
+            self.set_current_model(model_path)
+            if sentences_1.size != sentences_2.size:
+                return None
+            else:
+                for i in range(sentences_1.size):
+                    sim += [self.match(sentences_1[i], sentences_2[i])]
 
-            steps, thresholds, f1_score, cutoff = max_f1_score(sim, df, step=0.02)
-            fig = plt.figure(figsize=(7, 6))
+            steps, thresholds, f1_score, cutoff = max_f1_score(sim, df, step=step)
+            plt.figure(figsize=(7, 6))
             plt.grid(True)
             start = timer()
             model_name = Path(model_path).stem
@@ -101,7 +106,7 @@ class MatchManager:
             plt.xlabel("Cutoff", fontsize=fontsize)
             plt.ylabel("F1-score", fontsize=fontsize)
             plt.plot(steps, thresholds, label="F1-score(cutoff)", linewidth=line_thickness)
-            plt.plot(cutoff, f1_score, "r*", label="Max F1-score" )
+            plt.plot(cutoff, f1_score, "r*", label="Max F1-score")
             plt.annotate(f'({cutoff}, {f1_score})', (cutoff - 0.06, f1_score + 0.01), fontsize=fontsize - 6)
             plt.legend(loc="best")
             imname = "Maximization-F1-score-" + model_name + ".png"
@@ -115,5 +120,5 @@ class MatchManager:
             res.setdefault("precision", metrics["precision"])
             res.setdefault("recall", metrics["recall"])
             res.setdefault("sim", str(preds))
-            print(f"Time of computing {model_name}: {timer() - start}")
+            print(f"Time of computing {model_name}: {round(timer() - start, 3)}")
             return res

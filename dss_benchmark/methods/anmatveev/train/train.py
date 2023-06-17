@@ -45,7 +45,7 @@ class TrainModelParams:
         metadata={"help": "Seed для генератора случайных чисел"}
     )
     workers:int = field(
-        default=3,
+        default=1,
         metadata={"help": "Рабочие потоки для обучения модели"}
     )
     min_alpha:float = field(
@@ -115,7 +115,6 @@ class TrainModelManager:
                  params=TrainModelParams, 
                  verbose=False,
                  cache: cachetools.Cache = None):
-        self.params = params
         self.params = params
         if cache is None:
             cache = EmptyMapping()
