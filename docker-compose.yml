@@ -12,7 +12,7 @@ services:
       - REDIS_PASSWORD=12345
 
   redis_commander:
-    image: 'ghcr.io/joeferner/redis-commander:0.8.1'
+    image: 'ghcr.io/joeferner/redis-commander:latest'
     hostname: redis-commander
     restart: unless-stopped
     environment:
