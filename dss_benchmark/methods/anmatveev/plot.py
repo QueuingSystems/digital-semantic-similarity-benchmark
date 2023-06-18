@@ -34,7 +34,7 @@ class PlotManager:
                          data["window"], data["epochs"], data["sg"], data["min_count"], data["vector_size"]
                      ),
                      linewidth=line_thickness)
-            plt.plot(data["cutoff"], data["f1-score"], "*", label="(cutoff, max-F1)({}, {})".format(data["cutoff"], data["f1-score"]))
+            plt.plot(data["cutoff"], data["f1-score"], "*", label="cutoff={}, max-F1={})".format(data["cutoff"], data["f1-score"]))
         elif plot_type == "ROC-AUC":
             pass
 

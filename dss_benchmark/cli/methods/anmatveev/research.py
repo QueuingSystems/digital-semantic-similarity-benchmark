@@ -26,7 +26,29 @@ def max_f1_ch_best(model_name, train_text, benchmark_text, args):
     kwargs = parse_arbitrary_arguments(args)
     params = TrainModelParams(**kwargs)
     params.texts = train_text
-    windows = [5, 15]
+    cases = [
+        # windows, epochs, is_sg, min_count, vector_size
+
+        (30, 7, 0, 12, 150),
+        # (5, 6, 0, 5, 50),
+        # (5, 7, 0, 5, 50),
+        # (5, 8, 0, 5, 50),
+
+        # (5, 5, 0, 5, 50),
+        # (5, 7, 0, 5, 50),
+        # (5, 9, 0, 5, 50),
+        # (5, 11, 0, 5, 50),
+        #
+        # (5, 5, 1, 5, 50),
+        # (5, 7, 1, 5, 50),
+        # (5, 9, 1, 5, 50),
+        # (5, 11, 1, 5, 50),
+        #
+        # (5, 5, 1, 5, 50),
+        # (5, 5, 1, 5, 100),
+        # (5, 5, 1, 5, 200),
+        # (5, 5, 1, 5, 300)
+    ]
     plotManager = PlotManager()
     imname = f"Maximization F1-score-{model_name}"
     plotManager.init_plot(title=imname,
@@ -34,8 +56,13 @@ def max_f1_ch_best(model_name, train_text, benchmark_text, args):
                           ylabel="F1-score",
                           figsize=(7, 6))
     benchmark_text = pd.read_json(benchmark_text)
-    for window in windows:
-        params.window = window
+    for case in cases:
+        params.window = case[0]
+        params.epochs = case[1]
+        params.sg = case[2]
+        params.min_count = case[3]
+        params.vector_size = case[4]
+
         trainManager = TrainModelManager(params)
         model_path = trainManager.train(model_name)
         matchManager = MatchManager(model_path, params)
@@ -46,5 +73,5 @@ def max_f1_ch_best(model_name, train_text, benchmark_text, args):
         res["min_count"] = params.min_count
         res["vector_size"] = params.vector_size
         plotManager.add_plot(res, plot_type="F1-score")
-    imname += f"-windows-{windows[0]}-{windows[-1]}.png"
+    imname += f"-best.png"
     plotManager.save(imname)
