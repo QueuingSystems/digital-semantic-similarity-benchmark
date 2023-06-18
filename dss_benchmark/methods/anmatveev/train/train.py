@@ -45,7 +45,7 @@ class TrainModelParams:
         metadata={"help": "Seed для генератора случайных чисел"}
     )
     workers:int = field(
-        default=1,
+        default=8,
         metadata={"help": "Рабочие потоки для обучения модели"}
     )
     min_alpha:float = field(
