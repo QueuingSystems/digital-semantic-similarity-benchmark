@@ -2,7 +2,7 @@ import click
 from dss_benchmark.common import print_dataclass
 from dss_benchmark.common import parse_arbitrary_arguments
 import pandas as pd
-from dss_benchmark.methods.anmatveev.train.train import (
+from dss_benchmark.methods.anmatveev.train import (
     TrainModelParams,
     TrainModelManager
 )

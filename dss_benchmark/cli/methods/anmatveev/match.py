@@ -2,7 +2,7 @@ import click
 from dss_benchmark.common import print_dataclass
 from dss_benchmark.common import parse_arbitrary_arguments
 import pandas as pd
-from dss_benchmark.methods.anmatveev.match.match import (
+from dss_benchmark.methods.anmatveev.match import (
     MatchManager
 )
 
@@ -22,7 +22,7 @@ def mch():
 @click.argument(
     "args", nargs=-1, type=click.UNPROCESSED
 )
-def max_f1(model_path, texts, args):
+def max_f1(model_path, texts, args=None):
     manager = MatchManager(model_path)
     benchmark = pd.read_json(texts)
     res = manager.max_f1(benchmark['text_rp'],
@@ -30,6 +30,7 @@ def max_f1(model_path, texts, args):
                          benchmark,
                          model_path)
     print(res)
+    return res
 
 
 @mch.command(
@@ -48,3 +49,4 @@ def roc_auc(model_path, texts, args):
                           benchmark,
                           model_path)
     print(res)
+    return res

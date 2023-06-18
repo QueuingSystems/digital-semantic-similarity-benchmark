@@ -10,26 +10,21 @@ import numpy as np
 from dss_benchmark.methods import AbstractSimilarityMethod
 from dss_benchmark.common.preprocess.anmatveev.common import *
 import sentence_transformers
-import matplotlib.pyplot as plt
 import pymorphy2
 from nltk.corpus import stopwords
 from pathlib import Path
 from sklearn.metrics import auc
 
 
-
-fontsize = 14
-plt.rcParams.update({'font.size': fontsize})
-plt.rcParams['figure.dpi'] = 300
 redis_port = 0
 redis_host = '-'
-line_thickness = 3
 round_number = 3
 
 
 class MatchManager(AbstractSimilarityMethod):
     def __init__(self,
                  model_path,
+                 params,
                  verbose=False,
                  cache: cachetools.Cache = None):
         if cache is None:
@@ -38,6 +33,7 @@ class MatchManager(AbstractSimilarityMethod):
         self._verbose = verbose
         self._models = {}
         self._current_model = {}
+        self._params = params
         if model_path:
             self.load_model(model_path)
 
@@ -63,6 +59,9 @@ class MatchManager(AbstractSimilarityMethod):
 
     def match(self, text_1: str, text_2: str) -> float:
         key = text_1 + text_2 + self._current_model['path']
+        if Path(self._current_model['path']).stem in gensim_models and self._params:
+            key += str(self._params.window) + str(self._params.epochs) \
+                   + str(self._params.sg) + str(self._params.min_count) + str(self._params.vector_size)
         cached = self._cache.get(key)
         value = None
         if cached:
@@ -113,30 +112,19 @@ class MatchManager(AbstractSimilarityMethod):
                 model_name = Path(model_path).stem
                 for i in range(sentences_1.size):
                     sim += [self.match(sentences_1[i], sentences_2[i])]
-                print(f"Time of computing {model_name}: {round(timer() - start, 3)}")
+
                 steps, thresholds, f1_score, cutoff = max_f1_score(sim, df, step=step)
-                plt.figure(figsize=(7, 6))
-                plt.grid(True)
-                if "paraphrase-multilingual-MiniLM-L12-v2" in model_path:
-                    model_name = "multilingual"
-                plt.title(f"Maximization: {model_name}")
-                plt.xlabel("Cutoff", fontsize=fontsize)
-                plt.ylabel("F1-score", fontsize=fontsize)
-                plt.plot(steps, thresholds, label="F1-score(cutoff)", linewidth=line_thickness)
-                plt.plot(cutoff, f1_score, "r*", label="Max F1-score")
-                plt.annotate(f'({cutoff}, {f1_score})', (cutoff - 0.06, f1_score + 0.01), fontsize=fontsize - 6)
-                plt.legend(loc="best")
-                imname = "Maximization-F1-score-" + model_name + ".png"
-                plt.savefig(image_path + imname)
-                print(image_path + imname)
+                print(f"Time of computing {model_name}: {round(timer() - start, 3)}")
                 res = {}
                 preds = [sim[i] >= cutoff for i in range(len(df))]
                 metrics = calc_all(sim, df, cutoff)
-                res.setdefault("cutoff", cutoff)
-                res.setdefault("f1-score", metrics["f1-score"])
-                res.setdefault("precision", metrics["precision"])
-                res.setdefault("recall", metrics["recall"])
-                res.setdefault("sim", str(preds))
+                res["steps"] = steps
+                res["thresholds"] = thresholds
+                res["cutoff"] = cutoff
+                res["f1-score"] = metrics["f1-score"]
+                res["precision"] = metrics["precision"]
+                res["recall"] = metrics["recall"]
+                res["preds"] = preds
                 return res
 
     def roc_auc(self, sentences_1, sentences_2, df, model_path, step=0.02):
@@ -152,13 +140,13 @@ class MatchManager(AbstractSimilarityMethod):
                 for i in range(sentences_1.size):
                     sim += [self.match(sentences_1[i], sentences_2[i])]
                 print(f"Time of computing {model_path}: {round(timer() - start, 3)}")
-                fig = plt.figure(figsize=(10, 8))
-                plt.xlim([0.0, 1.0])
-                plt.ylim([0.0, 1.05])
-                plt.grid(True)
-                plt.xlabel('False Positive Rate')
-                plt.ylabel('True Positive Rate')
-                plt.title('ROC-AUC')
+                # fig = plt.figure(figsize=(10, 8))
+                # plt.xlim([0.0, 1.0])
+                # plt.ylim([0.0, 1.05])
+                # plt.grid(True)
+                # plt.xlabel('False Positive Rate')
+                # plt.ylabel('True Positive Rate')
+                # plt.title('ROC-AUC')
                 res = {}
                 steps, tprs, fprs, cutoff = max_diff_tpr_fpr(sim, df)
                 roc_auc = auc(fprs, tprs)
@@ -167,11 +155,11 @@ class MatchManager(AbstractSimilarityMethod):
                 if "paraphrase-multilingual-MiniLM-L12-v2" == model_path:
                     model_path = "multilingual"
 
-                res.setdefault(model_path, {"AUC": round(roc_auc, 3), "cutoff": cutoff, "sim": str(preds)})
-                plt.plot(fprs, tprs, linewidth=line_thickness,
-                         label=f'ROC {model_path} (area = {round(roc_auc, 3)}, cutoff = {cutoff})')
-                plt.plot([0, 1], [0, 1], color='navy', linestyle='--', linewidth=line_thickness)
-                plt.legend(loc="best")
-                imname = "ROC-AUC" + ".png"
-                plt.savefig(image_path + imname)
+                # res.setdefault(model_path, {"AUC": round(roc_auc, 3), "cutoff": cutoff, "sim": str(preds)})
+                # plt.plot(fprs, tprs, linewidth=line_thickness,
+                #          label=f'ROC {model_path} (area = {round(roc_auc, 3)}, cutoff = {cutoff})')
+                # plt.plot([0, 1], [0, 1], color='navy', linestyle='--', linewidth=line_thickness)
+                # plt.legend(loc="best")
+                # imname = "ROC-AUC" + ".png"
+                # plt.savefig(image_path + imname)
                 return res

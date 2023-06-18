@@ -1,3 +1,4 @@
-from .train.train import *
+from .train import *
+from .match import *
 
 
