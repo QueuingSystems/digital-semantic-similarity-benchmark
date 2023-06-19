@@ -1,4 +1,5 @@
 import dataclasses
+import os
 
 import click
 import pandas as pd
@@ -15,8 +16,11 @@ from dss_benchmark.experiments import (
     kwm_match,
     kwm_match_parallel,
     load_dataset,
+    process_f1_score,
     process_roc_auc,
 )
+from dss_benchmark.experiments.common import process_auprc
+from dss_benchmark.experiments.keyword_matching import kwm_experiment, kwm_measure_timings, kwm_process_timings, kwm_test_mprof
 from dss_benchmark.methods.keyword_matching import (
     KeywordDistanceMatcher,
     KwDistanceMatcherParams,
@@ -106,26 +110,40 @@ def match_auc(dataset_name, csv_path, args):
     # matcher = KeywordDistanceMatcher(params, cache=cache)
     # results = kwm_match(matcher, 0, dataset, verbose=True)
 
-    _, _, cutoff, auc = process_roc_auc(dataset, results)
-    print(f"AUC: {auc:.4f} (cutoff: {cutoff:.4f})")
+    _, _, auc_cutoff, auc = process_roc_auc(dataset, results)
+    for r in results:
+        r.match = r.value >= auc_cutoff
+    tp, fp, fn, tn = confusion_matrix(results)
+    f1 = f1_score(tp, fp, fn)
+    print(f"AUC: {auc:.4f} (cutoff: {auc_cutoff:.4f}, F1: {f1:.4f})")
+
+    _, _, auprc, auprc_cutoff, auprc_f1 = process_auprc(dataset, results)
+    print(f'AUPRC: {auprc:.4f} (cutoff: {auprc_cutoff:.4f}, F1: {auprc_f1:.4f})')
+
+    f1, cutoff = process_f1_score(results)
     for r in results:
         r.match = r.value >= cutoff
 
     tp, fp, fn, tn = confusion_matrix(results)
     f1 = f1_score(tp, fp, fn)
 
+    print(f"F1: {f1:.4f} (cutoff: {cutoff:.4f})")
+
     print(f"TP: {str(tp):3s} FP: {str(fp):3s}")
     print(f"FN: {str(fn):3s} TN: {str(tn):3s}")
-    print(
-        f"F1: {f1:.4f}, precision: {tp / (tp + fp):.4f}, recall: {tp / (tp + fn):.4f}"
-    )
+    print(f"precision: {tp / (tp + fp):.4f}, recall: {tp / (tp + fn):.4f}")
     append_to_csv(
         csv_path,
         {
+            "dataset": dataset_name,
             **dataclasses.asdict(params),
             "auc": auc,
-            "cutoff": cutoff,
+            "auc_cutoff": auc_cutoff,
+            "auprc": auprc,
+            "auprc_cutoff": auprc_cutoff,
+            "auprc_f1": auprc_f1,
             "f1": f1,
+            "cutoff": cutoff,
             "tp": tp,
             "fp": fp,
             "fn": fn,
@@ -134,3 +152,48 @@ def match_auc(dataset_name, csv_path, args):
             "recall": tp / (tp + fn),
         },
     )
+
+
+@kwme.command(
+    help="Провести эксперимент с подбором параметров",
+)
+@click.option(
+    "-d", "--dataset-name", type=click.Choice(DATASETS), required=True, prompt=True
+)
+@click.option(
+    "-r",
+    "--results-folder",
+    type=click.Path(dir_okay=True),
+)
+def match_exp(dataset_name, results_folder):
+    dataset = load_dataset(dataset_name)
+    if results_folder is None:
+        results_folder = f"_output/kwm_exp_{dataset_name}"
+    if not os.path.exists(results_folder):
+        os.makedirs(results_folder)
+    kwm_experiment(dataset, dataset_name, results_folder, True)
+
+
+@kwme.command(
+    help="Провести эксперимент с временем",
+)
+def timings():
+    kwm_measure_timings(True)
+
+
+@kwme.command(
+    help='Обработать результаты эксперимента со временем',
+)
+def timings_process():
+    kwm_process_timings()
+
+
+@kwme.command(
+    help="Запуск для mprof",
+)
+@click.option(
+    '--parallel/--no-parallel',
+    default=True,
+)
+def test_mprof(parallel):
+    kwm_test_mprof(parallel, True)
