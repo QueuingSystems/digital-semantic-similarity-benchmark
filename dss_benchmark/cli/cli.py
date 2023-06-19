@@ -24,7 +24,6 @@ cli.add_command(mch)
 cli.add_command(rsch)
 
 cli.add_command(benchmarks)
-
 cli.add_command(benchmarks)
 
 if __name__ == "__main__":

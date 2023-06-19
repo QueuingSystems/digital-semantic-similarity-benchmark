@@ -179,7 +179,7 @@ class TrainModelManager:
                                                 max_final_vocab=self.params.max_final_vocab,
                                                 shrink_windows=self.params.shrink_windows)
         print(f'Training {model} time: {round(timer() - start, 3)} secs')
-        self.model.save(model_path + model)
+        self.model.save(model_path)
         return model_path + model
         # return
 
