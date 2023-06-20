@@ -48,10 +48,13 @@ class MatchManager(AbstractSimilarityMethod):
         return data_df_preprocessed
 
     def load_model(self, model_path):
-        if Path(model_path).stem in gensim_models:
+        try:
             self._models[model_path] = models.ldamodel.LdaModel.load(model_path)
-        elif Path(model_path).stem in transformer_models:
-            self._models[model_path] = sentence_transformers.SentenceTransformer(model_path)
+        except Exception:
+            try:
+                self._models[model_path] = sentence_transformers.SentenceTransformer(model_path)
+            except Exception:
+                pass
 
     def set_current_model(self, model_path):
         self._current_model['model'] = self._models[model_path]
@@ -59,7 +62,7 @@ class MatchManager(AbstractSimilarityMethod):
 
     def match(self, text_1: str, text_2: str) -> float:
         key = text_1 + text_2 + self._current_model['path']
-        if Path(self._current_model['path']).stem in gensim_models and self._params:
+        if self._params:
             key += str(self._params.window) + str(self._params.epochs) \
                    + str(self._params.sg) + str(self._params.min_count) + str(self._params.vector_size)
         cached = self._cache.get(key)
@@ -67,35 +70,39 @@ class MatchManager(AbstractSimilarityMethod):
         if cached:
             print(f'cached: {cached}')
             return cached
-        if Path(self._current_model['path']).stem in gensim_models:
+        try:
+            check = self._current_model['model'].wv.index_to_key
             text_1 = preprocess(text_1, punctuation_marks, stop_words, morph)
             text_2 = preprocess(text_2, punctuation_marks, stop_words, morph)
             text_1 = [w for w in text_1 if w in self._current_model['model'].wv.index_to_key]
             text_2 = [w for w in text_2 if w in self._current_model['model'].wv.index_to_key]
             value = float(round(self._current_model['model'].wv.n_similarity(text_1, text_2), round_number))
-        elif Path(self._current_model['path']).stem in transformer_models:
-            sentences_1 = sent_preprocess(text_1)
-            sentences_2 = sent_preprocess(text_2)
+        except Exception:
+            try:
+                sentences_1 = sent_preprocess(text_1)
+                sentences_2 = sent_preprocess(text_2)
 
-            def comp(e):
-                return e['cos_sim']
+                def comp(e):
+                    return e['cos_sim']
 
-            sentences_2_embeddings = []
-            for sent_2 in sentences_2:
-                sentences_2_embeddings += [self._current_model['model'].encode(sent_2, convert_to_tensor=True)]
+                sentences_2_embeddings = []
+                for sent_2 in sentences_2:
+                    sentences_2_embeddings += [self._current_model['model'].encode(sent_2, convert_to_tensor=True)]
 
-            max_sims = []
-            for sent_1 in sentences_1:
-                sent_1_embedding = self._current_model['model'].encode(sent_1, convert_to_tensor=True)
-                sim = []
-                for i in range(len(sentences_2_embeddings)):
-                    sim += [{'proj': sentences_2[i],
-                             'cos_sim': float(sentence_transformers.util.cos_sim(
-                                 sent_1_embedding,
-                                 sentences_2_embeddings[i]))
-                             }]
-                max_sims.append(max(sim, key=comp)['cos_sim'])
-            value = float(np.round(np.mean(max_sims), round_number))
+                max_sims = []
+                for sent_1 in sentences_1:
+                    sent_1_embedding = self._current_model['model'].encode(sent_1, convert_to_tensor=True)
+                    sim = []
+                    for i in range(len(sentences_2_embeddings)):
+                        sim += [{'proj': sentences_2[i],
+                                 'cos_sim': float(sentence_transformers.util.cos_sim(
+                                     sent_1_embedding,
+                                     sentences_2_embeddings[i]))
+                                 }]
+                    max_sims.append(max(sim, key=comp)['cos_sim'])
+                value = float(np.round(np.mean(max_sims), round_number))
+            except Exception:
+                pass
         self._cache[key] = value
         return value
 
