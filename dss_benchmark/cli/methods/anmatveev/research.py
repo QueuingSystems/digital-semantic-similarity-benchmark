@@ -36,6 +36,7 @@ def train_cascade(file_path, train_text, models_path, args):
     for group in groups:
         subdir = os.path.join(models_path, group)
         os.makedirs(subdir, exist_ok=True)
+        i = 1
         for case in groups[group]:
             params.window = case[1][1]
             params.epochs = case[1][2]
@@ -44,8 +45,8 @@ def train_cascade(file_path, train_text, models_path, args):
             params.vector_size = case[1][5]
             # in fastText maybe sth else
             trainManager = TrainModelManager(params)
-            trainManager.train(case[1][0], model_path=os.path.join(subdir, case[0]))
-            print(params)
+            trainManager.train(case[1][0], model_path=os.path.join(subdir, str(i) + '-' + case[0]))
+            i += 1
             print(case[0])
 
 
@@ -67,7 +68,7 @@ def get_best_params_f1(models_path, benchmark_text, text1, text2, args):
     benchmark_text = pd.read_json(benchmark_text)
     for group, dirs, files in sorted(os.walk(models_path))[1:]:
         plotManager = PlotManager()
-        imname = f"-Maximization-F1-score-{files[0].split('-')[0]}"
+        imname = f"Maximization-F1-score-{files[0].split('-')[1]}"
         plotManager.init_plot(title=imname,
                               xlabel="Cutoff",
                               ylabel="F1-score",
@@ -89,9 +90,7 @@ def get_best_params_f1(models_path, benchmark_text, text1, text2, args):
             res["sg"] = params.sg
             res["min_count"] = params.min_count
             res["vector_size"] = params.vector_size
-            print(res)
             plotManager.add_plot(res, plot_type="F1-score")
-        print(group.split('/')[-1] + imname + ".png")
-        plotManager.save(group.split('/')[-1] + imname + ".png")
+        plotManager.save(group.split('/')[-1] + '-'+ imname + ".png")
 
 
