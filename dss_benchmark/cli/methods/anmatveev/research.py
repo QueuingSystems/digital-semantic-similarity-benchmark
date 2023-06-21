@@ -7,7 +7,8 @@ from dss_benchmark.methods.anmatveev.plot import *
 from dss_benchmark.methods.anmatveev.params_parser import *
 import pandas as pd
 
-
+PARAMS_SEQUENCE_WORD2VEC = ["window", "epochs",  "sg", "min_count", "vector_size"]
+PARAMS_SEQUENCE_FASTTEXT = PARAMS_SEQUENCE_WORD2VEC[:] + ["min_n", "max_n"]
 @click.group(
     "research", help="Сопоставление и исследование"
 )
@@ -43,6 +44,8 @@ def train_cascade(file_path, train_text, models_path, args):
             params.sg = case[1][3]
             params.min_count = case[1][4]
             params.vector_size = case[1][5]
+            params.min_n = case[1][6]
+            params.max_n = case[1][7]
             # in fastText maybe sth else
             trainManager = TrainModelManager(params)
             trainManager.train(case[1][0], model_path=os.path.join(subdir, str(i) + '-' + case[0]))
@@ -66,6 +69,8 @@ def get_best_params_f1(models_path, benchmark_text, text1, text2, args):
     kwargs = parse_arbitrary_arguments(args)
     params = TrainModelParams(**kwargs)
     benchmark_text = pd.read_json(benchmark_text)
+    best_params_list = []
+    group_number = 1
     for group, dirs, files in sorted(os.walk(models_path))[1:]:
         plotManager = PlotManager()
         imname = f"Maximization-F1-score-{files[0].split('-')[1]}"
@@ -73,7 +78,8 @@ def get_best_params_f1(models_path, benchmark_text, text1, text2, args):
                               xlabel="Cutoff",
                               ylabel="F1-score",
                               figsize=(7, 6))
-
+        max_f1 = 0
+        best_param = 0
         for file in sorted(files):
             model_path = os.path.join(group, file)
             case = ParamsParser().read_one(file)
@@ -82,15 +88,35 @@ def get_best_params_f1(models_path, benchmark_text, text1, text2, args):
             params.sg = case[3]
             params.min_count = case[4]
             params.vector_size = case[5]
+            if "fastText".lower() in models_path.lower():
+                params.min_n = case[6]
+                params.max_n = case[7]
+            
             matchManager = MatchManager(model_path, params)
             res = matchManager.max_f1(benchmark_text[text1], benchmark_text[text2], benchmark_text,
                                       model_path)
+
             res["window"] = params.window
             res["epochs"] = params.epochs
             res["sg"] = params.sg
             res["min_count"] = params.min_count
             res["vector_size"] = params.vector_size
+            res["min_n-max-n"] = (params.min_n, params.max_n)
+            if res["f1-score"] > max_f1:
+                max_f1 = res["f1-score"]
+                if group_number <= 5:
+                    best_param = case[group_number]
+                else:
+                    best_param = (case[6], case[7])
             plotManager.add_plot(res, plot_type="F1-score")
-        plotManager.save(group.split('/')[-1] + '-'+ imname + ".png")
+        best_params_list.append(best_param)
+        plotManager.save(str(group_number) + '-' + imname + ".png")
+        group_number += 1
 
+    best_params_dict = None
+    if "word2vec".lower() in models_path.lower():
+        best_params_dict = dict(zip(PARAMS_SEQUENCE_WORD2VEC, best_params_list))
+    elif "fastText".lower() in models_path.lower():
+        best_params_dict = dict(zip(PARAMS_SEQUENCE_FASTTEXT, best_params_list))
 
+    print(best_params_dict)
