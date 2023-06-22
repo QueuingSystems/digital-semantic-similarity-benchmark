@@ -24,7 +24,7 @@ round_number = 3
 class MatchManager(AbstractSimilarityMethod):
     def __init__(self,
                  model_path,
-                 params,
+                 params =None,
                  verbose=False,
                  cache: cachetools.Cache = None):
         if cache is None:
@@ -33,7 +33,8 @@ class MatchManager(AbstractSimilarityMethod):
         self._verbose = verbose
         self._models = {}
         self._current_model = {}
-        self._params = params
+        if params:
+            self._params = params
         if model_path:
             self.load_model(model_path)
 
@@ -146,13 +147,6 @@ class MatchManager(AbstractSimilarityMethod):
                 for i in range(sentences_1.size):
                     sim += [self.match(sentences_1[i], sentences_2[i])]
                 print(f"Time of computing {model_path}: {round(timer() - start, 3)}")
-                # fig = plt.figure(figsize=(10, 8))
-                # plt.xlim([0.0, 1.0])
-                # plt.ylim([0.0, 1.05])
-                # plt.grid(True)
-                # plt.xlabel('False Positive Rate')
-                # plt.ylabel('True Positive Rate')
-                # plt.title('ROC-AUC')
                 res = {}
                 steps, tprs, fprs, cutoff = max_diff_tpr_fpr(sim, df)
                 roc_auc = auc(fprs, tprs)
@@ -160,12 +154,10 @@ class MatchManager(AbstractSimilarityMethod):
                 model_path = Path(model_path).stem
                 if "paraphrase-multilingual-MiniLM-L12-v2" == model_path:
                     model_path = "multilingual"
-
-                # res.setdefault(model_path, {"AUC": round(roc_auc, 3), "cutoff": cutoff, "sim": str(preds)})
-                # plt.plot(fprs, tprs, linewidth=line_thickness,
-                #          label=f'ROC {model_path} (area = {round(roc_auc, 3)}, cutoff = {cutoff})')
-                # plt.plot([0, 1], [0, 1], color='navy', linestyle='--', linewidth=line_thickness)
-                # plt.legend(loc="best")
-                # imname = "ROC-AUC" + ".png"
-                # plt.savefig(image_path + imname)
+                res["steps"] = steps
+                res["tprs"] = tprs
+                res["fprs"] = fprs
+                res["cutoff"] = cutoff
+                res["auc"] = round(roc_auc, round_number)
+                res["preds"] = preds
                 return res
