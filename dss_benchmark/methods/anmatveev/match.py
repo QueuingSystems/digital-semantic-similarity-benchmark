@@ -68,7 +68,7 @@ class MatchManager(AbstractSimilarityMethod):
         cached = self._cache.get(key)
         value = None
         if cached:
-            print(f'cached: {cached}')
+            # print(f'cached: {cached}')
             return cached
         try:
             check = self._current_model['model'].wv.index_to_key
@@ -119,7 +119,6 @@ class MatchManager(AbstractSimilarityMethod):
                 model_name = Path(model_path).stem
                 for i in range(sentences_1.size):
                     sim += [self.match(sentences_1[i], sentences_2[i])]
-
                 steps, thresholds, f1_score, cutoff = max_f1_score(sim, df, step=step)
                 print(f"Time of computing {model_name}: {round(timer() - start, 3)}")
                 res = {}
