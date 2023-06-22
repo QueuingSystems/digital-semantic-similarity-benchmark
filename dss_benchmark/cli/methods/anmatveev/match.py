@@ -51,7 +51,12 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
                           plot_type="F1-score",
                           model=case[0],
                           figsize=(7, 6))
-    benchmark = pd.read_json(texts)
+    benchmark = None
+    if '.json' in texts:
+        benchmark = pd.read_json(texts)
+    elif '.csv' in texts:
+        benchmark = pd.read_csv(texts)
+
     res = manager.max_f1(benchmark[text1],
                          benchmark[text2],
                          benchmark,
@@ -82,7 +87,11 @@ def roc_auc(model_path, texts,  text1, text2, im_prefix, args):
     kwargs = parse_arbitrary_arguments(args)
     params = TrainModelParams(**kwargs)
     manager = MatchManager(model_path, params=params)
-    benchmark = pd.read_json(texts)
+    benchmark = None
+    if '.json' in texts:
+        benchmark = pd.read_json(texts)
+    elif '.csv' in texts:
+        benchmark = pd.read_csv(texts)
     res = manager.roc_auc(benchmark[text1],
                           benchmark[text2],
                           benchmark,
@@ -106,7 +115,13 @@ def roc_auc(model_path, texts,  text1, text2, im_prefix, args):
                           model=case[0],
                           plot_type="ROC-AUC",
                           figsize=(7, 6))
-    benchmark = pd.read_json(texts)
+
+    benchmark = None
+    if '.json' in texts:
+        benchmark = pd.read_json(texts)
+    elif '.csv' in texts:
+        benchmark = pd.read_csv(texts)
+
     res = manager.roc_auc(benchmark[text1],
                          benchmark[text2],
                          benchmark,
