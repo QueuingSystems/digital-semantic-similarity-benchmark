@@ -322,6 +322,7 @@ def kwm_experiment(
     df = pd.DataFrame(best_values)
     df.to_csv(f"{results_folder}/kwm_best.csv", index=False)
 
+    plt.rcParams['savefig.dpi'] = 300
     if dataset_name == "studentor_partner":
         _kwm_auprc_curve(dataset, params, results_folder, verbose)
     else:
