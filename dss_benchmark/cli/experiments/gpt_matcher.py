@@ -1,5 +1,3 @@
-import random
-
 import click
 import pandas as pd
 from dss_benchmark.common import init_cache, parse_arbitrary_arguments, print_dataclass
@@ -8,11 +6,13 @@ from dss_benchmark.experiments import (
     confusion_matrix,
     f1_score,
     gpt_match,
+    gpt_measure_timings,
+    kwm_process_timings,
     load_dataset,
     process_auprc,
     process_f1_score,
+    process_roc_auc,
 )
-from dss_benchmark.experiments.common import process_roc_auc
 from dss_benchmark.methods.chatgpt import GPTMatcher, GPTMatcherParams
 
 __all__ = ["gptme"]
@@ -97,3 +97,17 @@ def match(dataset_name, cutoff, shot, shot_value, args):
 
     _, _, auc_cutoff, auc = process_roc_auc(dataset, results)
     print(f"AUC: {auc:.4f}, cutoff: {auc_cutoff:.4f}")
+
+
+@gptme.command(
+    help="Провести эксперимент с временем",
+)
+def timings():
+    gpt_measure_timings(True)
+
+
+@gptme.command(
+    help="Обработать результаты эксперимента со временем",
+)
+def timings_process():
+    kwm_process_timings("gpt")

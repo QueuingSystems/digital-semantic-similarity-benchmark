@@ -19,7 +19,7 @@ __all__ = [
 ]
 
 
-DATASETS = ["rpd_dataset", "all_examples", "studentor_partner"]
+DATASETS = ["rpd_dataset", "all_examples", "studentor_partner", "dataset_v6_r30"]
 
 
 @dataclass
@@ -65,6 +65,20 @@ def load_dataset(name: str) -> List[Datum]:
                 need_match=datum["need_match"] == 'TRUE'
             )
             for datum in data
+        ]
+    if name == 'dataset_v6_r30':
+        with open (f"./data/{name}.csv", "r") as f:
+            reader = csv.DictReader(f)
+            data = list(reader)
+        return [
+            Datum(
+                text_1=datum["vacancy"],
+                text_2=datum["resume"],
+                title_1=f'vacancy_{i}',
+                title_2=f'resume_{i}',
+                need_match=datum["result"] == '1'
+            )
+            for i, datum in enumerate(data)
         ]
 
     raise ValueError(f"Unknown dataset: {name}")
