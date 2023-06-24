@@ -15,11 +15,9 @@ from nltk.corpus import stopwords
 from pathlib import Path
 from sklearn.metrics import auc
 
+__all__ = ['MatchManager']
 
-redis_port = 0
-redis_host = '-'
 round_number = 3
-
 
 class MatchManager(AbstractSimilarityMethod):
     def __init__(self,
@@ -48,13 +46,10 @@ class MatchManager(AbstractSimilarityMethod):
         return data_df_preprocessed
 
     def load_model(self, model_path):
-        try:
+        if model_type(model_path) == "gensim":
             self._models[model_path] = models.ldamodel.LdaModel.load(model_path)
-        except Exception:
-            try:
-                self._models[model_path] = sentence_transformers.SentenceTransformer(model_path)
-            except Exception:
-                pass
+        elif model_type(model_path) == "transformer":
+            self._models[model_path] = sentence_transformers.SentenceTransformer(model_path)
 
     def set_current_model(self, model_path):
         self._current_model['model'] = self._models[model_path]
@@ -68,41 +63,36 @@ class MatchManager(AbstractSimilarityMethod):
         cached = self._cache.get(key)
         value = None
         if cached:
-            # print(f'cached: {cached}')
             return cached
-        try:
-            check = self._current_model['model'].wv.index_to_key
+
+        if model_type(self._current_model['path']) == "gensim":
             text_1 = preprocess(text_1, punctuation_marks, stop_words, morph)
             text_2 = preprocess(text_2, punctuation_marks, stop_words, morph)
             text_1 = [w for w in text_1 if w in self._current_model['model'].wv.index_to_key]
             text_2 = [w for w in text_2 if w in self._current_model['model'].wv.index_to_key]
             value = float(round(self._current_model['model'].wv.n_similarity(text_1, text_2), round_number))
-        except Exception:
-            try:
-                sentences_1 = sent_preprocess(text_1)
-                sentences_2 = sent_preprocess(text_2)
+        elif model_type(self._current_model['path']) == "transformer":
+            sentences_1 = sent_preprocess(text_1)
+            sentences_2 = sent_preprocess(text_2)
+            def comp(e):
+                return e['cos_sim']
 
-                def comp(e):
-                    return e['cos_sim']
+            sentences_2_embeddings = []
+            for sent_2 in sentences_2:
+                sentences_2_embeddings += [self._current_model['model'].encode(sent_2, convert_to_tensor=True)]
 
-                sentences_2_embeddings = []
-                for sent_2 in sentences_2:
-                    sentences_2_embeddings += [self._current_model['model'].encode(sent_2, convert_to_tensor=True)]
-
-                max_sims = []
-                for sent_1 in sentences_1:
-                    sent_1_embedding = self._current_model['model'].encode(sent_1, convert_to_tensor=True)
-                    sim = []
-                    for i in range(len(sentences_2_embeddings)):
-                        sim += [{'proj': sentences_2[i],
-                                 'cos_sim': float(sentence_transformers.util.cos_sim(
-                                     sent_1_embedding,
-                                     sentences_2_embeddings[i]))
-                                 }]
-                    max_sims.append(max(sim, key=comp)['cos_sim'])
-                value = float(np.round(np.mean(max_sims), round_number))
-            except Exception:
-                pass
+            max_sims = []
+            for sent_1 in sentences_1:
+                sent_1_embedding = self._current_model['model'].encode(sent_1, convert_to_tensor=True)
+                sim = []
+                for i in range(len(sentences_2_embeddings)):
+                    sim += [{'proj': sentences_2[i],
+                             'cos_sim': float(sentence_transformers.util.cos_sim(
+                                 sent_1_embedding,
+                                 sentences_2_embeddings[i]))
+                             }]
+                max_sims.append(max(sim, key=comp)['cos_sim'])
+            value = float(np.round(np.mean(max_sims), round_number))
         self._cache[key] = value
         return value
 

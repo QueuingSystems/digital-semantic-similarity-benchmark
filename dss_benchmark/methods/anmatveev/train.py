@@ -6,6 +6,7 @@ import gensim
 from dss_benchmark.common import *
 from timeit import default_timer as timer
 
+__all__ = ['TrainModelParams', 'TrainModelManager']
 @dataclass
 class TrainModelParams:
     texts:str = field(

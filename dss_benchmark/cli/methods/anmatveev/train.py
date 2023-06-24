@@ -7,6 +7,7 @@ from dss_benchmark.methods.anmatveev.train import (
     TrainModelManager
 )
 
+__all__ = ["trn"]
 @click.group(
     "train", help="Обучение: Обучение неглубоких нейросетей"
 )

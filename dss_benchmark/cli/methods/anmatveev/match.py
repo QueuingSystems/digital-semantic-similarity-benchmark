@@ -5,7 +5,6 @@ from dss_benchmark.common import print_dataclass
 from dss_benchmark.common import parse_arbitrary_arguments
 from dss_benchmark.common.preprocess.anmatveev.common import gensim_models, model_type
 import pandas as pd
-
 from dss_benchmark.methods.anmatveev import TrainModelParams
 from dss_benchmark.methods.anmatveev.match import (
     MatchManager
@@ -13,6 +12,7 @@ from dss_benchmark.methods.anmatveev.match import (
 from dss_benchmark.methods.anmatveev.params_parser import ParamsParser
 from dss_benchmark.methods.anmatveev.plot import PlotManager
 
+__all__ = ["mch"]
 
 @click.group(
     "match", help="Сопоставление и исследование"
@@ -120,11 +120,6 @@ def roc_auc(model_path, texts, text1, text2, im_prefix, args):
         kwargs = parse_arbitrary_arguments(args)
         params = TrainModelParams(**kwargs)
         manager = MatchManager(model_path, params=params)
-        res = manager.roc_auc(benchmark[text1],
-                              benchmark[text2],
-                              benchmark,
-                              model_path)
-
         case = ParamsParser().read_one(model_path)
         params.window = case[1]
         params.epochs = case[2]
