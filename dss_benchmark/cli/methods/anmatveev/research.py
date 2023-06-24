@@ -40,11 +40,13 @@ def update_params(res_: dict, params_: TrainModelParams, model_: str):
 @click.option("-t1", "--text1", required=True, type=str, help="Поле 1", prompt=True)
 @click.option("-t2", "--text2", required=True, type=str, help="Поле 2", prompt=True)
 @click.option("-mp", "--models_path", required=True, type=str, help="Путь к моделям", prompt=True)
+@click.option("-bpp", "--best_params_path", required=True, type=str, help="Путь к папке, в которой будет лежать файл с оптимальными параметрами",
+              prompt=True)
 @click.argument(
     "args", nargs=-1, type=click.UNPROCESSED
 )
 # pretrain models before its comparing with splitting into groups
-def train_cascade(model, file_path, train_text, benchmark_text, text1, text2, models_path, args):
+def train_cascade(model, file_path, train_text, benchmark_text, text1, text2, models_path, best_params_path, args):
     kwargs = parse_arbitrary_arguments(args)
     params = TrainModelParams(**kwargs)
     params.texts = train_text
@@ -115,6 +117,8 @@ def train_cascade(model, file_path, train_text, benchmark_text, text1, text2, mo
                                   figsize=(7, 6))
         plotManager.add_plot(res)
     plotManager.save(imname + ".png")
+    with open(os.path.join(best_params_path, 'best_roc_auc_' + model + '.json'), "w") as outfile:
+        json.dump(best_params, outfile)
 
 
 

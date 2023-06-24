@@ -40,15 +40,15 @@ class PlotManager:
         if self._plot_type == "F1-score":
             if self._model == "word2vec":
                 plt.plot(data["steps"], data["thresholds"],
-                         label="F1-score(cutoff), window={}, epochs={}, sg={}, min_count={}, vector_size={}".format(
-                             data["window"], data["epochs"], data["sg"], data["min_count"], data["vector_size"]
+                         label="F1-score(cutoff), sg={}, window={}, epochs={}, min_count={}, vector_size={}".format(
+                             data["sg"], data["window"], data["epochs"], data["min_count"], data["vector_size"]
                          ),
                          linewidth=line_thickness)
             elif self._model == "fastText":
                 plt.plot(data["steps"], data["thresholds"],
-                         label="F1-score(cutoff), window={}, epochs={}, sg={}, min_count={}, vector_size={}, min_n={}, "
+                         label="F1-score(cutoff), sg={}, window={}, epochs={}, min_count={}, vector_size={}, min_n={}, "
                                "max_n={}".format(
-                             data["window"], data["epochs"], data["sg"], data["min_count"], data["vector_size"],
+                             data["sg"], data["window"], data["epochs"], data["min_count"], data["vector_size"],
                              data["min_n-max_n"][0], data["min_n-max_n"][1]
                          ),
                          linewidth=line_thickness)
@@ -58,15 +58,15 @@ class PlotManager:
         elif self._plot_type == "ROC-AUC":
             if self._model == "word2vec":
                 plt.plot(data["fprs"], data["tprs"], linewidth=line_thickness,
-                         label='ROC-AUC  window={}, epochs={}, sg={}, min_count={}, vector_size={} area={}, cutoff={}'.format(
-                             data["window"], data["epochs"], data["sg"], data["min_count"], data["vector_size"], data["auc"], data["cutoff"]
+                         label='ROC-AUC sg={}, window={}, epochs={}, min_count={}, vector_size={}, area={}, cutoff={}'.format(
+                             data["sg"], data["window"], data["epochs"], data["min_count"], data["vector_size"], data["auc"], data["cutoff"]
                          ))
             elif self._model == "fastText":
                 plt.plot(data["fprs"], data["tprs"], linewidth=line_thickness,
-                         label='ROC-AUC window={},epochs={},sg={},min_count={},vector_size={},'
+                         label='ROC-AUC sg={},window={},epochs={},min_count={},vector_size={},'
                                'min_n={},'
                                'max_n={},area={},cutoff={}'.format(
-                             data["window"], data["epochs"], data["sg"], data["min_count"], data["vector_size"],
+                             data["sg"], data["window"], data["epochs"], data["min_count"], data["vector_size"],
                              data["min_n-max_n"][0],
                              data["min_n-max_n"][1],
                              data["auc"], data["cutoff"]

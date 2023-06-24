@@ -92,7 +92,7 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
                              benchmark,
                              model_path)
         plotManager.add_plot(res)
-        plotManager.save(imname)
+        plotManager.save(imname, legend_fs=14)
 
 
 @mch.command(
