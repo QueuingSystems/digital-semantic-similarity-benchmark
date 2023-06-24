@@ -54,6 +54,7 @@ def train_cascade(model, file_path, train_text, benchmark_text, text1, text2, mo
     scenario = pd.read_csv(file_path)
     best_params = dict.fromkeys(list(scenario.columns)[1:])
     max_auc = 0
+    benchmark_filename = Path(benchmark_text).stem
     if '.json' in benchmark_text:
         benchmark_text = pd.read_json(benchmark_text)
     elif '.csv' in benchmark_text:
@@ -89,6 +90,8 @@ def train_cascade(model, file_path, train_text, benchmark_text, text1, text2, mo
 
         if not os.path.exists(new_model_path):
             trainManager.train(model, model_path=new_model_path)
+        else:
+            print(f'Model {new_model_path} exists. Computing...')
 
         matchManager = MatchManager(new_model_path, params)
         res = matchManager.roc_auc(benchmark_text[text1],
@@ -118,6 +121,6 @@ def train_cascade(model, file_path, train_text, benchmark_text, text1, text2, mo
                                   figsize=(7, 6))
         plotManager.add_plot(res)
     plotManager.save(imname + ".png")
-    with open(os.path.join(best_params_path, 'best_roc_auc_' + model + '.json'), "w") as outfile:
+    with open(os.path.join(best_params_path, 'best_roc_auc_' + benchmark_filename + '_' + model + '.json'), "w") as outfile:
         json.dump(best_params, outfile)
 
