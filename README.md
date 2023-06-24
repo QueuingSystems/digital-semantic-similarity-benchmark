@@ -35,11 +35,11 @@ data/documents_preprocessed.json -bt data/all_examples.json -t1 text_rp -t2 text
 `python -m dss_benchmark research  train-cascade -m fastText -fp data/fastText-cases.csv -tr 
 data/documents_preprocessed.json -bt data/all_examples.json -t1 text_rp -t2 text_proj -mp models/fastText --best_params_path data` то же, но с FastText
 
-`python -m dss_benchmark match  max-f1 -mp  models/word2vec/5/5-word2vec-1-30-7-5-100  -t dat
-a/studentor_partner.csv  -t1 text_1 -t2 text_2 -imp best_roc_auc_all_examples_studentor_partner_` максимизация f1-score на наилучшей модели word2vec по ROC-AUC, обученной на датасете documents.json на бенчмарке studentor_partner.csv
+`python -m dss_benchmark match  max-f1 -mp  models/word2vec/5/5-word2vec-1-30-7-5-100  -t data/studentor_partner.csv  -t1 text_1 -t2 text_2 -imp best_roc_auc_all_examples_studentor_partner_` максимизация f1-score на наилучшей модели word2vec по ROC-AUC, обученной на датасете documents.json на бенчмарке studentor_partner.csv
 
-`python -m dss_benchmark match  max-f1 -mp  models/word2vec/5/5-word2vec-1-30-7-5-100  -t dat
-a/dataset_v6_r30.csv  -t1 resume -t2 vacancy -imp best_roc_auc_all_examples_dataset_v6_r30_`  Максимизация F1 на наилучшей модели word2vec по ROC-AUC, обученной на датасете documents.json на бенчмарке dataset_v6_r30.csv
+`python -m dss_benchmark match  max-f1 -mp  models/word2vec/5/5-word2vec-1-30-7-5-100  -t data/dataset_v6_r30.csv  -t1 resume -t2 vacancy -imp best_roc_auc_all_examples_dataset_v6_r30_`  Максимизация F1 на наилучшей модели word2vec по ROC-AUC, обученной на датасете documents.json на бенчмарке dataset_v6_r30.csv
+
+-imp - префикс названия картинки, сделан для того, чтобы можно было маркировать графики, т.к. часть названия определяется автоматически.
 
 
 
