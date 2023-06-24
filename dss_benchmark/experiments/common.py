@@ -19,7 +19,7 @@ __all__ = [
 ]
 
 
-DATASETS = ["rpd_dataset", "all_examples", "studentor_partner", 'dataset_v6_r30']
+DATASETS = ["rpd_dataset", "all_examples", "studentor_partner", "dataset_v6_r30"]
 
 
 @dataclass
@@ -72,14 +72,15 @@ def load_dataset(name: str) -> List[Datum]:
             data = list(reader)
         return [
             Datum(
-                text_1=datum["vacancy_lem"],
-                text_2=datum["resume_lem"],
-                title_1="",
-                title_2="",
-                need_match=bool(datum["result"])
+                text_1=datum["vacancy"],
+                text_2=datum["resume"],
+                title_1=f'vacancy_{i}',
+                title_2=f'resume_{i}',
+                need_match=datum["result"] == '1'
             )
-            for datum in data
+            for i, datum in enumerate(data)
         ]
+
     raise ValueError(f"Unknown dataset: {name}")
 
 

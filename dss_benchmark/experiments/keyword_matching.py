@@ -322,6 +322,7 @@ def kwm_experiment(
     df = pd.DataFrame(best_values)
     df.to_csv(f"{results_folder}/kwm_best.csv", index=False)
 
+    plt.rcParams['savefig.dpi'] = 300
     if dataset_name == "studentor_partner":
         _kwm_auprc_curve(dataset, params, results_folder, verbose)
     else:
@@ -385,12 +386,12 @@ def _kwm_measure_time_on_dataset(
     return df
 
 
-def kwm_process_timings():
-    df_no_cache = pd.read_csv("_output/kwm_times_no_cache.csv")
-    df_cached = pd.read_csv("_output/kwm_times_cached.csv")
-    df_changed_vacancy = pd.read_csv("_output/kwm_times_no_cache_changed_vacancy.csv")
-    df_changed_resume = pd.read_csv("_output/kwm_times_no_cache_changed_resume.csv")
-    df_swapped = pd.read_csv("_output/kwm_times_no_cache_swapped.csv")
+def kwm_process_timings(prefix='kwm'):
+    df_no_cache = pd.read_csv(f"_output/{prefix}_times_no_cache.csv")
+    df_cached = pd.read_csv(f"_output/{prefix}_times_cached.csv")
+    df_changed_vacancy = pd.read_csv(f"_output/{prefix}_times_no_cache_changed_vacancy.csv")
+    df_changed_resume = pd.read_csv(f"_output/{prefix}_times_no_cache_changed_resume.csv")
+    df_swapped = pd.read_csv(f"_output/{prefix}_times_no_cache_swapped.csv")
 
     avg_no_cache_process_time = df_no_cache["process_time"].mean()
     avg_cached_process_time = df_cached["process_time"].mean()
@@ -444,7 +445,7 @@ def kwm_process_timings():
         ax.get_legend().set_visible(False)
         ax.grid(0.25)
         ax.set_axisbelow(True)
-    fig.savefig("_output/kwm_times_no_cache.png")
+    fig.savefig(f"_output/{prefix}_times_no_cache.png")
 
 
 
