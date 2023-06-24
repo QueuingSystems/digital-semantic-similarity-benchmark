@@ -33,8 +33,7 @@ class MatchManager(AbstractSimilarityMethod):
         self._verbose = verbose
         self._models = {}
         self._current_model = {}
-        if params:
-            self._params = params
+        self._params = params
         if model_path:
             self.load_model(model_path)
 

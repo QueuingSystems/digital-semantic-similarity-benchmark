@@ -180,7 +180,6 @@ class TrainModelManager:
                                                 shrink_windows=self.params.shrink_windows)
         print(f'Training {model} time: {round(timer() - start, 3)} secs')
         self.model.save(model_path)
-        print(model_path)
 
     
 

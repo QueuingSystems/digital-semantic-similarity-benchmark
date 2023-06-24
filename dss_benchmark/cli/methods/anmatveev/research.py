@@ -7,8 +7,10 @@ from dss_benchmark.methods.anmatveev.plot import *
 from dss_benchmark.methods.anmatveev.params_parser import *
 import pandas as pd
 
-PARAMS_SEQUENCE_WORD2VEC = ["window", "epochs",  "sg", "min_count", "vector_size"]
+PARAMS_SEQUENCE_WORD2VEC = ["window", "epochs", "sg", "min_count", "vector_size"]
 PARAMS_SEQUENCE_FASTTEXT = PARAMS_SEQUENCE_WORD2VEC[:] + ["min_n-max_n"]
+
+
 @click.group(
     "research", help="Сопоставление и исследование"
 )
@@ -16,41 +18,104 @@ def rsch():
     pass
 
 
+def update_params(res_: dict, params_: TrainModelParams, model_: str):
+    res_['sg'] = params_.sg
+    res_['window'] = params_.window
+    res_['epochs'] = params_.epochs
+    res_['min_count'] = params_.min_count
+    res_['vector_size'] = params_.vector_size
+    if model_.lower() == "fasttext":
+        res_['min_n'] = params_.min_n
+        res_['max_n'] = params_.max_n
+
+
 @rsch.command(
     help="Обучить все возможные комбинации моделей",
     context_settings=dict(ignore_unknown_options=True)
 )
+@click.option("-m", "--model", required=True, type=str, help="Тип модели", prompt=True)
 @click.option("-fp", "--file_path", required=True, type=str, help="Путь к файлу с параметрами", prompt=True)
 @click.option("-tr", "--train_text", required=True, type=str, help="Обучающий набор", prompt=True)
+@click.option("-bt", "--benchmark_text", required=True, type=str, help="Текст бенчмарка", prompt=True)
+@click.option("-t1", "--text1", required=True, type=str, help="Поле 1", prompt=True)
+@click.option("-t2", "--text2", required=True, type=str, help="Поле 2", prompt=True)
 @click.option("-mp", "--models_path", required=True, type=str, help="Путь к моделям", prompt=True)
 @click.argument(
     "args", nargs=-1, type=click.UNPROCESSED
 )
 # pretrain models before its comparing with splitting into groups
-def train_cascade(file_path, train_text, models_path, args):
+def train_cascade(model, file_path, train_text, benchmark_text, text1, text2, models_path, args):
     kwargs = parse_arbitrary_arguments(args)
     params = TrainModelParams(**kwargs)
     params.texts = train_text
     os.makedirs(models_path, exist_ok=True)
-    parser = ParamsParser(file_path)
-    groups = parser.read(split_into_groups=True)
-    for group in groups:
-        subdir = os.path.join(models_path, group)
+    scenario = pd.read_csv(file_path)
+    best_params = dict.fromkeys(list(scenario.columns)[1:])
+    max_auc = 0
+    if '.json' in benchmark_text:
+        benchmark_text = pd.read_json(benchmark_text)
+    elif '.csv' in benchmark_text:
+        benchmark_text = pd.read_csv(benchmark_text)
+    new_group = False
+    current_group = 0
+    plotManager = None
+    imname = None
+    for index, row in scenario.iterrows():
+
+        if row['group'] != current_group:
+            current_group = row['group']
+            new_group = True
+        else:
+            new_group = False
+
+        subdir = os.path.join(models_path, str(row['group']))
         os.makedirs(subdir, exist_ok=True)
-        i = 1
-        for case in groups[group]:
-            params.window = case[1][1]
-            params.epochs = case[1][2]
-            params.sg = case[1][3]
-            params.min_count = case[1][4]
-            params.vector_size = case[1][5]
-            if "fastText" in case[0]:
-                params.min_n = case[1][6]
-                params.max_n = case[1][7]
-            trainManager = TrainModelManager(params)
-            trainManager.train(case[1][0], model_path=os.path.join(subdir, str(i) + '-' + case[0]))
-            i += 1
-            print('case: ', case[0])
+        params.sg = int(row['sg']) if row['sg'] != 'x' else best_params['sg']
+        params.window = int(row['window']) if row['window'] != 'x' else best_params['window']
+        params.epochs = int(row['epochs']) if row['epochs'] != 'x' else best_params['epochs']
+        params.min_count = int(row['min_count']) if row['min_count'] != 'x' else best_params['min_count']
+        params.vector_size = int(row['vector_size']) if row['vector_size'] != 'x' else best_params['vector_size']
+        model_name = str(row['group']) + '-' + model + '-' + str(params.sg) + \
+                     '-' + str(params.window) + '-' + str(params.epochs) + '-' + str(params.min_count) + \
+                     '-' + str(params.vector_size)
+        if model.lower() == "fasttext":
+            params.min_n = int(row['min_n']) if row['min_n'] != 'x' else best_params['min_n']
+            params.max_n = int(row['max_n']) if row['max_n'] != 'x' else best_params['max_n']
+            model_name += '-' + str(params.min_n) + '-' + str(params.max_n)
+        trainManager = TrainModelManager(params)
+        new_model_path = os.path.join(subdir, model_name)
+
+        if not os.path.exists(new_model_path):
+            trainManager.train(model, model_path=new_model_path)
+
+        matchManager = MatchManager(new_model_path, params)
+        res = matchManager.roc_auc(benchmark_text[text1],
+                                   benchmark_text[text2],
+                                   benchmark_text,
+                                   new_model_path)
+
+        update_params(res, params, model)
+        if res["auc"] > max_auc:
+            max_auc = res["auc"]
+            update_params(best_params, params, model)
+
+        print(f'Best params: {best_params}')
+
+        if new_group:
+            if plotManager:
+                plotManager.save(imname + ".png")
+            plotManager = PlotManager()
+            imname = f"ROC-AUC-{row['group']}-{model}"
+            print(new_group, imname)
+            plotManager.init_plot(title=imname,
+                                  xlabel="False Positive Rate",
+                                  ylabel="True Positive Rate",
+                                  model=model,
+                                  plot_type="ROC-AUC",
+                                  figsize=(7, 6))
+        plotManager.add_plot(res)
+    plotManager.save(imname + ".png")
+
 
 
 @rsch.command(
@@ -61,7 +126,8 @@ def train_cascade(file_path, train_text, models_path, args):
 @click.option("-bt", "--benchmark_text", required=True, type=str, help="Путь к бенчмарку", prompt=True)
 @click.option("-t1", "--text1", required=True, type=str, help="Поле 1", prompt=True)
 @click.option("-t2", "--text2", required=True, type=str, help="Поле 2", prompt=True)
-@click.option("-bpp", "--best_params_path", required=True, type=str, help="Путь к файлу с оптимальными параметрами", prompt=True)
+@click.option("-bpp", "--best_params_path", required=True, type=str, help="Путь к файлу с оптимальными параметрами",
+              prompt=True)
 @click.argument(
     "args", nargs=-1, type=click.UNPROCESSED
 )
@@ -97,7 +163,7 @@ def get_best_params_f1(models_path, benchmark_text, text1, text2, best_params_pa
             if "fastText".lower() in models_path.lower():
                 params.min_n = case[6]
                 params.max_n = case[7]
-            
+
             matchManager = MatchManager(model_path, params)
             res = matchManager.max_f1(benchmark_text[text1], benchmark_text[text2], benchmark_text,
                                       model_path)
@@ -177,7 +243,7 @@ def get_best_params_roc_auc(models_path, benchmark_text, text1, text2, best_para
 
             matchManager = MatchManager(model_path, params)
             res = matchManager.roc_auc(benchmark_text[text1], benchmark_text[text2], benchmark_text,
-                                      model_path)
+                                       model_path)
 
             res["window"] = params.window
             res["epochs"] = params.epochs

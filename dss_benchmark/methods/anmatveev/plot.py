@@ -52,6 +52,8 @@ class PlotManager:
                              data["min_n-max_n"][0], data["min_n-max_n"][1]
                          ),
                          linewidth=line_thickness)
+            plt.plot(data["steps"], data["thresholds"], label="F1-score(cutoff)",
+                         linewidth=line_thickness)
             plt.plot(data["cutoff"], data["f1-score"], "*", label="cutoff={}, max-F1={}".format(data["cutoff"], data["f1-score"]))
         elif self._plot_type == "ROC-AUC":
             if self._model == "word2vec":

@@ -170,3 +170,14 @@ def max_diff_tpr_fpr(sim, df, step=0.02):
             print('ZeroDiv')
             pass
     return steps, tprs, fprs, cutoff
+
+
+def model_type(model_path):
+    is_gensim = False
+    for model in gensim_models:
+        if model.lower() in model_path.lower():
+            return "gensim"
+    for model in transformer_models:
+        if model.lower() in model_path.lower():
+            return "transformer"
+    return None
