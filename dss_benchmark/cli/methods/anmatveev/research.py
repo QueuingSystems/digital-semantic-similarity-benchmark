@@ -98,6 +98,7 @@ def train_cascade(model, file_path, train_text, benchmark_text, text1, text2, mo
 
         update_params(res, params, model)
         if res["auc"] > max_auc:
+            print("AUC = {}, cutoff = {}".format(res["auc"], res["cutoff"]))
             max_auc = res["auc"]
             update_params(best_params, params, model)
 

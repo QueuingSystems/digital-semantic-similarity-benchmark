@@ -35,6 +35,7 @@ def mch():
 def max_f1(model_path, texts, text1, text2, im_prefix, args):
     model_type_ = model_type(model_path)
     benchmark = None
+    res = None
     if '.json' in texts:
         benchmark = pd.read_json(texts)
     elif '.csv' in texts:
@@ -44,9 +45,9 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
         params = TrainModelParams(**kwargs)
         manager = MatchManager(model_path, params)
         case = ParamsParser().read_one(model_path)
-        params.window = case[1]
-        params.epochs = case[2]
-        params.sg = case[3]
+        params.sg = case[1]
+        params.window = case[2]
+        params.epochs = case[3]
         params.min_count = case[4]
         params.vector_size = case[5]
         if "fastText".lower() in model_path.lower():
@@ -70,7 +71,8 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
         res["sg"] = params.sg
         res["min_count"] = params.min_count
         res["vector_size"] = params.vector_size
-        res["min_n-max_n"] = (params.min_n, params.max_n)
+        res["min_n"] = params.min_n
+        res["max_n"] = params.max_n
         plotManager.add_plot(res)
         plotManager.save(im_prefix + imname)
     elif model_type_ == "transformer":
@@ -91,7 +93,7 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
                              benchmark,
                              model_path)
         plotManager.add_plot(res)
-        plotManager.save(imname, legend_fs=14)
+        plotManager.save(im_prefix + imname, legend_fs=14)
     return res
 
 
@@ -151,9 +153,9 @@ def roc_auc(model_path, texts, text1, text2, im_prefix, args):
         res["sg"] = params.sg
         res["min_count"] = params.min_count
         res["vector_size"] = params.vector_size
-        res["min_n-max_n"] = (params.min_n, params.max_n)
+        res["min_n"] = params.min_n
+        res["max_n"] = params.max_n
         plotManager.add_plot(res)
-        print(res)
         plotManager.save(im_prefix + imname)
     elif model_type_ == "transformer":
         model = Path(model_path).stem
@@ -173,5 +175,5 @@ def roc_auc(model_path, texts, text1, text2, im_prefix, args):
                               benchmark,
                               model_path)
         plotManager.add_plot(res)
-        plotManager.save(imname, legend_fs=14)
+        plotManager.save(im_prefix + imname, legend_fs=14)
     return res

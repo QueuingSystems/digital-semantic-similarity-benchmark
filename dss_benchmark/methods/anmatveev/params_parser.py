@@ -26,7 +26,6 @@ class ParamsParser:
 
     def read_one(self, model_name):
         l = model_name.split('-')[1:]
-        print(l)
         for i in range(1, len(l)):
             l[i] = int(l[i])
         return tuple(l)
