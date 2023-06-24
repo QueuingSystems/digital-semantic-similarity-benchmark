@@ -49,28 +49,31 @@ class PlotManager:
                          label="F1-score(cutoff), sg={}, window={}, epochs={}, min_count={}, vector_size={}, min_n={}, "
                                "max_n={}".format(
                              data["sg"], data["window"], data["epochs"], data["min_count"], data["vector_size"],
-                             data["min_n-max_n"][0], data["min_n-max_n"][1]
+                             data["min_n"], data["max_n"]
                          ),
                          linewidth=line_thickness)
-            plt.plot(data["steps"], data["thresholds"], label="F1-score(cutoff)",
+            else:
+                plt.plot(data["steps"], data["thresholds"], label="F1-score(cutoff)",
                          linewidth=line_thickness)
             plt.plot(data["cutoff"], data["f1-score"], "*", label="cutoff={}, max-F1={}".format(data["cutoff"], data["f1-score"]))
         elif self._plot_type == "ROC-AUC":
             if self._model == "word2vec":
                 plt.plot(data["fprs"], data["tprs"], linewidth=line_thickness,
-                         label='ROC-AUC sg={}, window={}, epochs={}, min_count={}, vector_size={}, area={}, cutoff={}'.format(
+                         label='ROC sg={}, window={}, epochs={}, min_count={}, vector_size={}, AUC={}, cutoff={}'.format(
                              data["sg"], data["window"], data["epochs"], data["min_count"], data["vector_size"], data["auc"], data["cutoff"]
                          ))
             elif self._model == "fastText":
                 plt.plot(data["fprs"], data["tprs"], linewidth=line_thickness,
-                         label='ROC-AUC sg={},window={},epochs={},min_count={},vector_size={},'
+                         label='ROC sg={},window={},epochs={},min_count={},vector_size={},'
                                'min_n={},'
-                               'max_n={},area={},cutoff={}'.format(
+                               'max_n={},AUC={},cutoff={}'.format(
                              data["sg"], data["window"], data["epochs"], data["min_count"], data["vector_size"],
-                             data["min_n-max_n"][0],
-                             data["min_n-max_n"][1],
+                             data["min_n"],
+                             data["max_n"],
                              data["auc"], data["cutoff"]
                          ))
+            else:
+                plt.plot(data["fprs"], data["tprs"], label="ROC AUC={}, cutoff={}".format(data["auc"], data["cutoff"]), linewidth=line_thickness)
             plt.plot([0, 1], [0, 1], color='navy', linestyle='--', linewidth=line_thickness)
 
     def save(self, imname, legend_loc="lower left", legend_fs=7):

@@ -73,7 +73,6 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
         res["min_n-max_n"] = (params.min_n, params.max_n)
         plotManager.add_plot(res)
         plotManager.save(im_prefix + imname)
-        return res
     elif model_type_ == "transformer":
         model = Path(model_path).stem
         if model.lower().startswith("paraphrase-multilingual"):
@@ -93,6 +92,7 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
                              model_path)
         plotManager.add_plot(res)
         plotManager.save(imname, legend_fs=14)
+    return res
 
 
 @mch.command(
@@ -106,56 +106,72 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
 @click.argument(
     "args", nargs=-1, type=click.UNPROCESSED
 )
-def roc_auc(model_path, texts,  text1, text2, im_prefix, args):
-    kwargs = parse_arbitrary_arguments(args)
-    params = TrainModelParams(**kwargs)
-    manager = MatchManager(model_path, params=params)
+def roc_auc(model_path, texts, text1, text2, im_prefix, args):
+    model_type_ = model_type(model_path)
     benchmark = None
     if '.json' in texts:
         benchmark = pd.read_json(texts)
     elif '.csv' in texts:
         benchmark = pd.read_csv(texts)
-    res = manager.roc_auc(benchmark[text1],
-                          benchmark[text2],
-                          benchmark,
-                          model_path)
+    res = None
+    if model_type_ == "gensim":
+        kwargs = parse_arbitrary_arguments(args)
+        params = TrainModelParams(**kwargs)
+        manager = MatchManager(model_path, params=params)
+        res = manager.roc_auc(benchmark[text1],
+                              benchmark[text2],
+                              benchmark,
+                              model_path)
 
-    case = ParamsParser().read_one(model_path)
-    params.window = case[1]
-    params.epochs = case[2]
-    params.sg = case[3]
-    params.min_count = case[4]
-    params.vector_size = case[5]
-    if "fastText".lower() in model_path.lower():
-        params.min_n = case[6]
-        params.max_n = case[7]
-    print(case)
-    plotManager = PlotManager()
-    imname = f"ROC-AUC-{case[0]}"
-    plotManager.init_plot(title=imname,
-                          xlabel="False Positive Rate",
-                          ylabel="True Positive Rate",
-                          model=case[0],
-                          plot_type="ROC-AUC",
-                          figsize=(7, 6))
+        case = ParamsParser().read_one(model_path)
+        params.window = case[1]
+        params.epochs = case[2]
+        params.sg = case[3]
+        params.min_count = case[4]
+        params.vector_size = case[5]
+        if "fastText".lower() in model_path.lower():
+            params.min_n = case[6]
+            params.max_n = case[7]
+        print(case)
+        plotManager = PlotManager()
+        imname = f"ROC-AUC-{case[0]}"
+        plotManager.init_plot(title=imname,
+                              xlabel="False Positive Rate",
+                              ylabel="True Positive Rate",
+                              model=case[0],
+                              plot_type="ROC-AUC",
+                              figsize=(7, 6))
 
-    benchmark = None
-    if '.json' in texts:
-        benchmark = pd.read_json(texts)
-    elif '.csv' in texts:
-        benchmark = pd.read_csv(texts)
-
-    res = manager.roc_auc(benchmark[text1],
-                         benchmark[text2],
-                         benchmark,
-                         model_path)
-    res["window"] = params.window
-    res["epochs"] = params.epochs
-    res["sg"] = params.sg
-    res["min_count"] = params.min_count
-    res["vector_size"] = params.vector_size
-    res["min_n-max_n"] = (params.min_n, params.max_n)
-    plotManager.add_plot(res)
-    print(res)
-    plotManager.save(im_prefix + imname)
+        res = manager.roc_auc(benchmark[text1],
+                              benchmark[text2],
+                              benchmark,
+                              model_path)
+        res["window"] = params.window
+        res["epochs"] = params.epochs
+        res["sg"] = params.sg
+        res["min_count"] = params.min_count
+        res["vector_size"] = params.vector_size
+        res["min_n-max_n"] = (params.min_n, params.max_n)
+        plotManager.add_plot(res)
+        print(res)
+        plotManager.save(im_prefix + imname)
+    elif model_type_ == "transformer":
+        model = Path(model_path).stem
+        if model.lower().startswith("paraphrase-multilingual"):
+            model = "multilingual"
+        imname = f"ROC-AUC-{model}"
+        plotManager = PlotManager()
+        plotManager.init_plot(title=imname,
+                              xlabel="False Positive Rate",
+                              ylabel="True Positive Rate",
+                              model=model,
+                              plot_type="ROC-AUC",
+                              figsize=(7, 6))
+        manager = MatchManager(model_path)
+        res = manager.roc_auc(benchmark[text1],
+                              benchmark[text2],
+                              benchmark,
+                              model_path)
+        plotManager.add_plot(res)
+        plotManager.save(imname, legend_fs=14)
     return res
