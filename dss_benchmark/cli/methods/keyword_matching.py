@@ -33,7 +33,7 @@ def match(text1, text2, args):
     kwargs = parse_arbitrary_arguments(args)
     params = KwDistanceMatcherParams(**kwargs)
     print_dataclass(params)
-
+    
     matcher = KeywordDistanceMatcher(params, verbose=True)
     result = matcher.match(text1, text2)
     print(f'\nСходство: {result}')

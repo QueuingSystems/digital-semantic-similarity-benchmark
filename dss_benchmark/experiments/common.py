@@ -19,7 +19,10 @@ __all__ = [
 ]
 
 
+DATASETS = ["rpd_dataset", "all_examples", "studentor_partner"]
+
 DATASETS = ["rpd_dataset", "all_examples", "studentor_partner", "dataset_v6_r30"]
+
 
 
 @dataclass
@@ -66,6 +69,7 @@ def load_dataset(name: str) -> List[Datum]:
             )
             for datum in data
         ]
+
     if name == 'dataset_v6_r30':
         with open (f"./data/{name}.csv", "r") as f:
             reader = csv.DictReader(f)

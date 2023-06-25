@@ -27,3 +27,23 @@ python -m nltk.downloader stopwords
 Запуск CLI: `python -m dss_benchmark`.
 
 Команды `keyword-matching-exp match`, `keyword-matching match` принимают на вход параметры модели. Параметры можно посмотреть по `keyword-matching params`.
+
+`python -m dss_benchmark research  train-cascade -m word2vec -fp data/word2vec-cases.csv -tr 
+data/documents_preprocessed.json -bt data/all_examples.json -t1 text_rp -t2 text_proj -mp models/word2vec --best_params_path data` - Каскадное обучение модели word2vec по файлу со сценарием по пути `data/word2vec-cases.csv`, где в качестве обучающего набора выступает `data/documents_preprocessed.json`, а в качестве бенчмарка `data/all_examples.json`. Сравниваются поля `text_rp` и `text_proj`, иерархия обученных моделей будет находиться в `models/word2vec` 
+конфигурация модели с наилучшими параметрами будет записана в папку `data`
+
+`python -m dss_benchmark research  train-cascade -m fastText -fp data/fastText-cases.csv -tr 
+data/documents_preprocessed.json -bt data/all_examples.json -t1 text_rp -t2 text_proj -mp models/fastText --best_params_path data` - то же, но с FastText
+
+`python -m dss_benchmark match  max-f1 -mp  models/word2vec/5/5-word2vec-1-30-7-5-100  -t data/studentor_partner.csv  -t1 text_1 -t2 text_2 -imp best_roc_auc_all_examples_studentor_partner_` максимизация f1-score на модели word2vec на бенчмарке studentor_partner.csv, сравниваются поля text_1 и text_2;
+
+`python -m dss_benchmark match  roc-auc -mp  models/word2vec/5/5-word2vec-1-30-7-5-100  -t data/studentor_partner.csv  -t1 text_1 -t2 text_2 -imp best_roc_auc_all_examples_studentor_partner_` максимизация roc-auc на модели word2vec на бенчмарке studentor_partner.csv, сравниваются поля text_1 и text_2;
+
+
+`-imp` - префикс названия картинки, сделан для того, чтобы можно было маркировать графики, т.к. часть названия определяется автоматически.
+
+
+
+
+
+
