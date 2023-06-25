@@ -1,14 +1,16 @@
-from dataclasses import dataclass, field
-from dss_benchmark.common import EmptyMapping
-from dss_benchmark.methods.tfidf_transformers import Text_preprocessing
-from sklearn.feature_extraction.text import TfidfVectorizer
-import cachetools
-from numpy import dot
-from numpy.linalg import norm
-import pandas as pd
 import os
 import pickle
+from dataclasses import dataclass, field
+
+import cachetools
+import pandas as pd
+from numpy import dot
+from numpy.linalg import norm
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+from dss_benchmark.common import EmptyMapping
 from dss_benchmark.methods import AbstractSimilarityMethod
+from dss_benchmark.methods.tfidf_transformers import Text_preprocessing
 
 
 @dataclass

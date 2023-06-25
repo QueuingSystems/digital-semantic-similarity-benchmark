@@ -1,13 +1,15 @@
 import json
 import os
 from pathlib import Path
+
 import click
-from dss_benchmark.common import parse_arbitrary_arguments
-from dss_benchmark.methods.anmatveev.train import *
-from dss_benchmark.methods.anmatveev.match import *
-from dss_benchmark.methods.anmatveev.plot import *
-from dss_benchmark.methods.anmatveev.params_parser import *
 import pandas as pd
+
+from dss_benchmark.common import parse_arbitrary_arguments
+from dss_benchmark.methods.anmatveev.match import *
+from dss_benchmark.methods.anmatveev.params_parser import *
+from dss_benchmark.methods.anmatveev.plot import *
+from dss_benchmark.methods.anmatveev.train import *
 
 __all__ = ["rsch"]
 

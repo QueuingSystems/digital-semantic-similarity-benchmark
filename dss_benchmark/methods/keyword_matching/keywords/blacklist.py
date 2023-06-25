@@ -1,5 +1,5 @@
-from thefuzz import fuzz
 from sklearn.base import BaseEstimator, ClassifierMixin
+from thefuzz import fuzz
 
 __all__ = ["KeywordsExcludeBlacklist"]
 

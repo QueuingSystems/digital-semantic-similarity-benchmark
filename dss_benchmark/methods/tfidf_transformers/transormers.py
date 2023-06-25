@@ -1,9 +1,11 @@
-import sentence_transformers
 from dataclasses import dataclass, field
-from dss_benchmark.common import EmptyMapping
-from dss_benchmark.methods.tfidf_transformers import Text_preprocessing
-from dss_benchmark.methods import AbstractSimilarityMethod
+
 import cachetools
+import sentence_transformers
+
+from dss_benchmark.common import EmptyMapping
+from dss_benchmark.methods import AbstractSimilarityMethod
+from dss_benchmark.methods.tfidf_transformers import Text_preprocessing
 
 
 @dataclass

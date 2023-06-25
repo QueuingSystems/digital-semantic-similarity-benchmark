@@ -1,5 +1,5 @@
-import numpy as np
 import click
+import numpy as np
 
 from dss_benchmark.experiments import DATASETS, load_dataset
 

@@ -4,7 +4,8 @@ from dss_benchmark.common import init_cache, tqdm_v
 from dss_benchmark.experiments.common import Datum, ResultDatum
 from dss_benchmark.methods.chatgpt import GPTMatcher, GPTMatcherParams
 
-from .keyword_matching import _kwm_get_big_dataset, _kwm_measure_time_on_dataset
+from .keyword_matching import (_kwm_get_big_dataset,
+                               _kwm_measure_time_on_dataset)
 
 __all__ = ["gpt_match", "gpt_measure_timings"]
 

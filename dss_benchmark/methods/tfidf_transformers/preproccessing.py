@@ -1,6 +1,5 @@
-import pandas as pd
-from pymystem3 import Mystem
 from nltk.corpus import stopwords
+from pymystem3 import Mystem
 
 
 class Text_preprocessing:

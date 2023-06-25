@@ -1,8 +1,8 @@
-import traceback
-import time
 import hashlib
 import json
 import re
+import time
+import traceback
 from dataclasses import dataclass, field
 from pprint import pprint
 
@@ -10,6 +10,7 @@ import backoff
 import cachetools
 import openai
 import tiktoken
+
 from dss_benchmark.common import limit_array
 from dss_benchmark.methods import AbstractSimilarityMethod
 

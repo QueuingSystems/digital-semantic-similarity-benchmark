@@ -1,14 +1,7 @@
 import click
+
 from dss_benchmark.cli.experiments import benchmarks, gptme, kwme, tfidfe
-from dss_benchmark.cli.methods import kwm, gpt, tfidf
-
-
-from dss_benchmark.cli.methods import trn
-from dss_benchmark.cli.methods import mch
-from dss_benchmark.cli.methods import rsch
-from dss_benchmark.cli.experiments import benchmarks
-
-from dss_benchmark.cli.experiments import benchmarks
+from dss_benchmark.cli.methods import gpt, kwm, mch, rsch, tfidf, trn
 
 __all__ = ["cli"]
 

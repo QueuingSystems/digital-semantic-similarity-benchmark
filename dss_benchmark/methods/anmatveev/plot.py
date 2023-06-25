@@ -1,8 +1,9 @@
 import os
 
 import matplotlib.pyplot as plt
-from dss_benchmark.methods.anmatveev.train import *
+
 from dss_benchmark.common.preprocess.anmatveev.common import image_path
+from dss_benchmark.methods.anmatveev.train import *
 
 __all__ = ["PlotManager"]
 

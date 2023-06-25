@@ -1,19 +1,21 @@
 import random
 from dataclasses import dataclass, field
-import pandas as pd
+from pathlib import Path
+from timeit import default_timer as timer
+
 import cachetools
 import gensim
 import gensim.models as models
-from dss_benchmark.common import *
-from timeit import default_timer as timer
 import numpy as np
-from dss_benchmark.methods import AbstractSimilarityMethod
-from dss_benchmark.common.preprocess.anmatveev.common import *
-import sentence_transformers
+import pandas as pd
 import pymorphy2
+import sentence_transformers
 from nltk.corpus import stopwords
-from pathlib import Path
 from sklearn.metrics import auc
+
+from dss_benchmark.common import *
+from dss_benchmark.common.preprocess.anmatveev.common import *
+from dss_benchmark.methods import AbstractSimilarityMethod
 
 __all__ = ["MatchManager"]
 

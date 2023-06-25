@@ -1,2 +1,2 @@
-from .train import *
 from .match import *
+from .train import *

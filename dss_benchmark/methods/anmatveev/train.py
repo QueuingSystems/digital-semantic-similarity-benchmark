@@ -1,10 +1,12 @@
 from dataclasses import dataclass, field
-from dss_benchmark.common import EmptyMapping
-import pandas as pd
+from timeit import default_timer as timer
+
 import cachetools
 import gensim
+import pandas as pd
+
 from dss_benchmark.common import *
-from timeit import default_timer as timer
+from dss_benchmark.common import EmptyMapping
 
 __all__ = ["TrainModelParams", "TrainModelManager"]
 
