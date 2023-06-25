@@ -13,12 +13,12 @@ from sklearn.metrics import auc
 
 from .common import calc_all, max_diff_tpr_fpr, max_f1_score, model_type
 
-__all__ = ["MatchManager"]
+__all__ = ["ANMMatchManager"]
 
 ROUND_NUMBER = 3
 
 
-class MatchManager(AbstractSimilarityMethod):
+class ANMMatchManager(AbstractSimilarityMethod):
     def __init__(
         self, model_path, params=None, verbose=False, cache: cachetools.Cache = None
     ):

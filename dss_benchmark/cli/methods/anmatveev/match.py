@@ -4,10 +4,10 @@ import click
 import pandas as pd
 from dss_benchmark.common import parse_arbitrary_arguments
 from dss_benchmark.methods.anmatveev import (
-    MatchManager,
+    ANMMatchManager,
     ParamsParser,
-    PlotManager,
-    TrainModelParams,
+    ANMPlotManager,
+    ANMTrainModelParams,
     model_type
 )
 
@@ -50,8 +50,8 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
         benchmark = pd.read_csv(texts)
     if model_type_ == "gensim":
         kwargs = parse_arbitrary_arguments(args)
-        params = TrainModelParams(**kwargs)
-        manager = MatchManager(model_path, params)
+        params = ANMTrainModelParams(**kwargs)
+        manager = ANMMatchManager(model_path, params)
         case = ParamsParser().read_one(model_path)
         params.sg = case[1]
         params.window = case[2]
@@ -63,7 +63,7 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
             params.max_n = case[7]
         print(case)
         imname = f"Maximization-F1-score-{case[0]}"
-        plotManager = PlotManager()
+        plotManager = ANMPlotManager()
         plotManager.init_plot(
             title=imname,
             xlabel="Cutoff",
@@ -87,7 +87,7 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
         if model.lower().startswith("paraphrase-multilingual"):
             model = "multilingual"
         imname = f"Maximization-F1-score-{model}"
-        plotManager = PlotManager()
+        plotManager = ANMPlotManager()
         plotManager.init_plot(
             title=imname,
             xlabel="Cutoff",
@@ -96,7 +96,7 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
             model=model,
             figsize=(7, 6),
         )
-        manager = MatchManager(model_path)
+        manager = ANMMatchManager(model_path)
         res = manager.max_f1(benchmark[text1], benchmark[text2], benchmark, model_path)
         plotManager.add_plot(res)
         plotManager.save(im_prefix + imname, legend_fs=14)
@@ -134,8 +134,8 @@ def roc_auc(model_path, texts, text1, text2, im_prefix, args):
     res = None
     if model_type_ == "gensim":
         kwargs = parse_arbitrary_arguments(args)
-        params = TrainModelParams(**kwargs)
-        manager = MatchManager(model_path, params=params)
+        params = ANMTrainModelParams(**kwargs)
+        manager = ANMMatchManager(model_path, params=params)
         case = ParamsParser().read_one(model_path)
         params.window = case[1]
         params.epochs = case[2]
@@ -146,7 +146,7 @@ def roc_auc(model_path, texts, text1, text2, im_prefix, args):
             params.min_n = case[6]
             params.max_n = case[7]
         print(case)
-        plotManager = PlotManager()
+        plotManager = ANMPlotManager()
         imname = f"ROC-AUC-{case[0]}"
         plotManager.init_plot(
             title=imname,
@@ -172,7 +172,7 @@ def roc_auc(model_path, texts, text1, text2, im_prefix, args):
         if model.lower().startswith("paraphrase-multilingual"):
             model = "multilingual"
         imname = f"ROC-AUC-{model}"
-        plotManager = PlotManager()
+        plotManager = ANMPlotManager()
         plotManager.init_plot(
             title=imname,
             xlabel="False Positive Rate",
@@ -181,7 +181,7 @@ def roc_auc(model_path, texts, text1, text2, im_prefix, args):
             plot_type="ROC-AUC",
             figsize=(7, 6),
         )
-        manager = MatchManager(model_path)
+        manager = ANMMatchManager(model_path)
         res = manager.roc_auc(benchmark[text1], benchmark[text2], benchmark, model_path)
         plotManager.add_plot(res)
         plotManager.save(im_prefix + imname, legend_fs=14)

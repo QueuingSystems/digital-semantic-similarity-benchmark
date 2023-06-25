@@ -5,7 +5,7 @@ from pathlib import Path
 import click
 import pandas as pd
 from dss_benchmark.common import parse_arbitrary_arguments
-from dss_benchmark.methods.anmatveev import TrainModelParams, TrainModelManager, MatchManager, PlotManager
+from dss_benchmark.methods.anmatveev import ANMTrainModelParams, ANMTrainModelManager, ANMMatchManager, ANMPlotManager
 
 __all__ = ["rsch"]
 
@@ -18,7 +18,7 @@ def rsch():
     pass
 
 
-def update_params(res_: dict, params_: TrainModelParams, model_: str):
+def update_params(res_: dict, params_: ANMTrainModelParams, model_: str):
     res_["sg"] = params_.sg
     res_["window"] = params_.window
     res_["epochs"] = params_.epochs
@@ -80,7 +80,7 @@ def train_cascade(
     args,
 ):
     kwargs = parse_arbitrary_arguments(args)
-    params = TrainModelParams(**kwargs)
+    params = ANMTrainModelParams(**kwargs)
     params.texts = train_text
     os.makedirs(models_path, exist_ok=True)
     scenario = pd.read_csv(file_path)
@@ -145,7 +145,7 @@ def train_cascade(
                 int(row["max_n"]) if row["max_n"] != "x" else best_params["max_n"]
             )
             model_name += "-" + str(params.min_n) + "-" + str(params.max_n)
-        trainManager = TrainModelManager(params)
+        trainManager = ANMTrainModelManager(params)
         new_model_path = os.path.join(subdir, model_name)
 
         if not os.path.exists(new_model_path):
@@ -153,7 +153,7 @@ def train_cascade(
         else:
             print(f"Model {new_model_path} exists. Computing...")
 
-        matchManager = MatchManager(new_model_path, params)
+        matchManager = ANMMatchManager(new_model_path, params)
         res = matchManager.roc_auc(
             benchmark_text[text1], benchmark_text[text2], benchmark_text, new_model_path
         )
@@ -169,7 +169,7 @@ def train_cascade(
         if new_group:
             if plotManager:
                 plotManager.save(imname + ".png")
-            plotManager = PlotManager()
+            plotManager = ANMPlotManager()
             imname = f"ROC-AUC-{row['group']}-{model}"
             print(new_group, imname)
             plotManager.init_plot(

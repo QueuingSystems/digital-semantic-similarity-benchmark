@@ -3,14 +3,14 @@ import os
 import matplotlib.pyplot as plt
 from dss_benchmark.methods.anmatveev.train import *
 
-__all__ = ["PlotManager"]
+__all__ = ["ANMPlotManager"]
 
 IMAGE_PATH = "images/"
 FONTSIZE = 14
 LINE_THICKNESS = 3
 
 
-class PlotManager:
+class ANMPlotManager:
     def __init__(self):
         self._ylabel = None
         self._xlabel = None

@@ -7,11 +7,11 @@ import pandas as pd
 from dss_benchmark.common import EmptyMapping
 from dss_benchmark.common.preprocess import preprocess
 
-__all__ = ["TrainModelParams", "TrainModelManager"]
+__all__ = ["ANMTrainModelParams", "ANMTrainModelManager"]
 
 
 @dataclass
-class TrainModelParams:
+class ANMTrainModelParams:
     texts: str = field(
         default=None, metadata={"help": "Обучающий набор (путь к файлу)"}
     )
@@ -124,9 +124,9 @@ class TrainModelParams:
     )
 
 
-class TrainModelManager:
+class ANMTrainModelManager:
     def __init__(
-        self, params=TrainModelParams, verbose=False, cache: cachetools.Cache = None
+        self, params=ANMTrainModelParams, verbose=False, cache: cachetools.Cache = None
     ):
         self.params = params
         if cache is None:
