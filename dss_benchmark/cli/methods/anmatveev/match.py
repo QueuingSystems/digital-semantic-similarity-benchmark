@@ -2,17 +2,18 @@ from pathlib import Path
 
 import click
 import pandas as pd
-from dss_benchmark.common import parse_arbitrary_arguments, print_dataclass
-from dss_benchmark.common.preprocess.anmatveev.common import gensim_models, model_type
-from dss_benchmark.methods.anmatveev import TrainModelParams
-from dss_benchmark.methods.anmatveev.match import MatchManager
-from dss_benchmark.methods.anmatveev.params_parser import ParamsParser
-from dss_benchmark.methods.anmatveev.plot import PlotManager
+from dss_benchmark.common import parse_arbitrary_arguments
+from dss_benchmark.methods.anmatveev import (
+    ANMMatchManager,
+    ANMPlotManager,
+    ANMTrainModelParams,
+    ParamsParser,
+)
 
 __all__ = ["mch"]
 
 
-@click.group("match", help="Сопоставление и исследование")
+@click.group("anm-match", help="Сопоставление и исследование")
 def mch():
     pass
 
@@ -23,6 +24,14 @@ def mch():
 )
 @click.option(
     "-mp", "--model_path", required=True, type=str, help="Путь к модели", prompt=True
+)
+@click.option(
+    "-mt",
+    "--model_type",
+    required=True,
+    type=click.Choice(["gensim", "transformer"]),
+    help="Тип модели",
+    prompt=True,
 )
 @click.option(
     "-t", "--texts", required=True, type=str, help="Путь к бенчмарку", prompt=True
@@ -38,18 +47,17 @@ def mch():
     prompt=True,
 )
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def max_f1(model_path, texts, text1, text2, im_prefix, args):
-    model_type_ = model_type(model_path)
+def max_f1(model_path, model_type, texts, text1, text2, im_prefix, args):
     benchmark = None
     res = None
     if ".json" in texts:
         benchmark = pd.read_json(texts)
     elif ".csv" in texts:
         benchmark = pd.read_csv(texts)
-    if model_type_ == "gensim":
+    if model_type == "gensim":
         kwargs = parse_arbitrary_arguments(args)
-        params = TrainModelParams(**kwargs)
-        manager = MatchManager(model_path, params)
+        params = ANMTrainModelParams(**kwargs)
+        manager = ANMMatchManager(model_path, params)
         case = ParamsParser().read_one(model_path)
         params.sg = case[1]
         params.window = case[2]
@@ -61,7 +69,7 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
             params.max_n = case[7]
         print(case)
         imname = f"Maximization-F1-score-{case[0]}"
-        plotManager = PlotManager()
+        plotManager = ANMPlotManager()
         plotManager.init_plot(
             title=imname,
             xlabel="Cutoff",
@@ -80,12 +88,12 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
         res["max_n"] = params.max_n
         plotManager.add_plot(res)
         plotManager.save(im_prefix + imname)
-    elif model_type_ == "transformer":
+    elif model_type == "transformer":
         model = Path(model_path).stem
         if model.lower().startswith("paraphrase-multilingual"):
             model = "multilingual"
         imname = f"Maximization-F1-score-{model}"
-        plotManager = PlotManager()
+        plotManager = ANMPlotManager()
         plotManager.init_plot(
             title=imname,
             xlabel="Cutoff",
@@ -94,7 +102,7 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
             model=model,
             figsize=(7, 6),
         )
-        manager = MatchManager(model_path)
+        manager = ANMMatchManager(model_path)
         res = manager.max_f1(benchmark[text1], benchmark[text2], benchmark, model_path)
         plotManager.add_plot(res)
         plotManager.save(im_prefix + imname, legend_fs=14)
@@ -114,6 +122,14 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
 @click.option("-t1", "--text1", required=True, type=str, help="Поле 1", prompt=True)
 @click.option("-t2", "--text2", required=True, type=str, help="Поле 2", prompt=True)
 @click.option(
+    "-mt",
+    "--model_type",
+    required=True,
+    type=click.Choice(["gensim", "transformer"]),
+    help="Тип модели",
+    prompt=True,
+)
+@click.option(
     "-imp",
     "--im_prefix",
     required=True,
@@ -122,18 +138,17 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
     prompt=True,
 )
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def roc_auc(model_path, texts, text1, text2, im_prefix, args):
-    model_type_ = model_type(model_path)
+def roc_auc(model_path, texts, text1, text2, model_type, im_prefix, args):
     benchmark = None
     if ".json" in texts:
         benchmark = pd.read_json(texts)
     elif ".csv" in texts:
         benchmark = pd.read_csv(texts)
     res = None
-    if model_type_ == "gensim":
+    if model_type == "gensim":
         kwargs = parse_arbitrary_arguments(args)
-        params = TrainModelParams(**kwargs)
-        manager = MatchManager(model_path, params=params)
+        params = ANMTrainModelParams(**kwargs)
+        manager = ANMMatchManager(model_path, params=params)
         case = ParamsParser().read_one(model_path)
         params.window = case[1]
         params.epochs = case[2]
@@ -144,7 +159,7 @@ def roc_auc(model_path, texts, text1, text2, im_prefix, args):
             params.min_n = case[6]
             params.max_n = case[7]
         print(case)
-        plotManager = PlotManager()
+        plotManager = ANMPlotManager()
         imname = f"ROC-AUC-{case[0]}"
         plotManager.init_plot(
             title=imname,
@@ -165,12 +180,12 @@ def roc_auc(model_path, texts, text1, text2, im_prefix, args):
         res["max_n"] = params.max_n
         plotManager.add_plot(res)
         plotManager.save(im_prefix + imname)
-    elif model_type_ == "transformer":
+    elif model_type == "transformer":
         model = Path(model_path).stem
         if model.lower().startswith("paraphrase-multilingual"):
             model = "multilingual"
         imname = f"ROC-AUC-{model}"
-        plotManager = PlotManager()
+        plotManager = ANMPlotManager()
         plotManager.init_plot(
             title=imname,
             xlabel="False Positive Rate",
@@ -179,7 +194,7 @@ def roc_auc(model_path, texts, text1, text2, im_prefix, args):
             plot_type="ROC-AUC",
             figsize=(7, 6),
         )
-        manager = MatchManager(model_path)
+        manager = ANMMatchManager(model_path)
         res = manager.roc_auc(benchmark[text1], benchmark[text2], benchmark, model_path)
         plotManager.add_plot(res)
         plotManager.save(im_prefix + imname, legend_fs=14)

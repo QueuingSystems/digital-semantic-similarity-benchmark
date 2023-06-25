@@ -1,14 +1,11 @@
 import dataclasses
-import time
-from multiprocessing.pool import Pool
-from multiprocessing.process import current_process
-from typing import Dict, List, Union
+from typing import List
 
 import numpy as np
 import pandas as pd
-from dss_benchmark.common import init_cache, tqdm_v
+from dss_benchmark.common import tqdm_v
 from dss_benchmark.common.dataclass_utils import print_dataclass
-from dss_benchmark.methods.tfidf_transformers.tfidf import TfIdf, TfIdfParams
+from dss_benchmark.methods.tfidf import TfIdfMatcher, TfIdfMatcherParams
 from matplotlib import pyplot as plt
 
 from .common import (
@@ -16,7 +13,6 @@ from .common import (
     ResultDatum,
     confusion_matrix,
     f1_score,
-    load_dataset,
     process_auprc,
     process_f1_score,
     process_roc_auc,
@@ -28,7 +24,7 @@ __all__ = [
 ]
 
 
-def tfidf_match(matcher: TfIdf, cutoff: int, dataset: List[Datum], verbose=False):
+def tfidf_match(matcher: TfIdfMatcher, cutoff: int, dataset: List[Datum], verbose=False):
     result: List[ResultDatum] = []
     for datum in tqdm_v(dataset, verbose=verbose):
         value = matcher.match(datum.text_1, datum.text_2)
@@ -43,7 +39,7 @@ def tfidf_experiment(
     if dataset_name == "studentor_partner":
         key = "auprc"
     result1 = _research_ngram(dataset, dataset_name, key, results_folder, verbose)
-    params1 = TfIdfParams(
+    params1 = TfIdfMatcherParams(
         train_data="all_examples",
         min_ngram=result1["ngram"][0],
         max_ngram=result1["ngram"][1],
@@ -81,10 +77,10 @@ def _research_ngram(
     data = []
     list_ngram = [(1, 1), (1, 2), (1, 3), (2, 2), (2, 3), (3, 3)]
     for ngram in list_ngram:
-        params = TfIdfParams(
+        params = TfIdfMatcherParams(
             train_data="all_examples", min_ngram=ngram[0], max_ngram=ngram[1]
         )
-        model = TfIdf(params)
+        model = TfIdfMatcher(params)
         for cutoff in np.linspace(0, 100, 100):
             result = tfidf_match(model, cutoff, dataset)
             data.append(
@@ -116,7 +112,7 @@ def _research_ngram(
 
 def _research_bin_and_sublinear_tf(
     dataset: List[Datum],
-    params: TfIdfParams,
+    params: TfIdfMatcherParams,
     key: str,
     dataset_name: str,
     results_folder: str,
@@ -129,7 +125,7 @@ def _research_bin_and_sublinear_tf(
         for sub in list_sublinear:
             params.binary = bin
             params.sublinear_tf = sub
-            model = TfIdf(params)
+            model = TfIdfMatcher(params)
             for cutoff in np.linspace(0, 100, 100):
                 result = tfidf_match(model, cutoff, dataset)
                 data.append(
@@ -191,7 +187,7 @@ def _get_results(dataset: List[Datum], results: List[ResultDatum]):
 
 def _tfidf_roc_curve(
     dataset: List[Datum],
-    params: List[TfIdfParams],
+    params: List[TfIdfMatcherParams],
     results_folder: str,
     verbose=False,
 ):
@@ -206,7 +202,7 @@ def _tfidf_roc_curve(
     ]
     fig, ax = plt.subplots(1, 1, figsize=(8, 6))
     for param, title in options:
-        model = TfIdf(param)
+        model = TfIdfMatcher(param)
         result = tfidf_match(model, 0, dataset, verbose=False)
         fpr, tpr, cutoff, auc = process_roc_auc(dataset, result)
         ax.plot(fpr, tpr, label=f"{title} (AUC={auc:.3f}, cutoff={cutoff:.1f})")
@@ -221,7 +217,7 @@ def _tfidf_roc_curve(
 
 def _tfidf_auprc_curve(
     dataset: List[Datum],
-    params: List[TfIdfParams],
+    params: List[TfIdfMatcherParams],
     results_folder: str,
     verbose=False,
 ):
@@ -236,7 +232,7 @@ def _tfidf_auprc_curve(
     ]
     fig, ax = plt.subplots(1, 1, figsize=(8, 6))
     for param, title in options:
-        model = TfIdf(param)
+        model = TfIdfMatcher(param)
         result = tfidf_match(model, 0, dataset, verbose=False)
         precision, recall, auprc, auprc_cutoff, auprc_f1 = process_auprc(
             dataset, result

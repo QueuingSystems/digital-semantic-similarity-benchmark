@@ -1,29 +1,31 @@
-import random
-from dataclasses import dataclass, field
 from pathlib import Path
 from timeit import default_timer as timer
 
 import cachetools
-import gensim
 import gensim.models as models
 import numpy as np
 import pandas as pd
-import pymorphy2
 import sentence_transformers
-from dss_benchmark.common import *
-from dss_benchmark.common.preprocess.anmatveev.common import *
+from dss_benchmark.common import init_cache
+from dss_benchmark.common.preprocess import preprocess, sent_preprocess
 from dss_benchmark.methods import AbstractSimilarityMethod
-from nltk.corpus import stopwords
 from sklearn.metrics import auc
 
-__all__ = ["MatchManager"]
+from .common import calc_all, max_diff_tpr_fpr, max_f1_score
 
-round_number = 3
+__all__ = ["ANMMatchManager"]
+
+ROUND_NUMBER = 3
 
 
-class MatchManager(AbstractSimilarityMethod):
+class ANMMatchManager(AbstractSimilarityMethod):
     def __init__(
-        self, model_path, params=None, verbose=False, cache: cachetools.Cache = None
+        self,
+        model_path,
+        params=None,
+        verbose=False,
+        cache: cachetools.Cache = None,
+        model_type="gensim",
     ):
         if cache is None:
             cache = init_cache("redis")
@@ -32,6 +34,7 @@ class MatchManager(AbstractSimilarityMethod):
         self._models = {}
         self._current_model = {}
         self._params = params
+        self._model_type = model_type
         if model_path:
             self.load_model(model_path)
 
@@ -42,17 +45,13 @@ class MatchManager(AbstractSimilarityMethod):
         data_df_preprocessed[
             "preprocessed_" + text_field_1
         ] = data_df_preprocessed.apply(
-            lambda row: preprocess(
-                row[text_field_1], punctuation_marks, stop_words, morph
-            ),
+            lambda row: preprocess(row[text_field_1]),
             axis=1,
         )
         data_df_preprocessed[
             "preprocessed_" + text_field_2
         ] = data_df_preprocessed.apply(
-            lambda row: preprocess(
-                row[text_field_2], punctuation_marks, stop_words, morph
-            ),
+            lambda row: preprocess(row[text_field_2]),
             axis=1,
         )
         data_df_preprocessed = data_df_preprocessed.drop(
@@ -62,9 +61,9 @@ class MatchManager(AbstractSimilarityMethod):
         return data_df_preprocessed
 
     def load_model(self, model_path):
-        if model_type(model_path) == "gensim":
+        if self._model_type == "gensim":
             self._models[model_path] = models.ldamodel.LdaModel.load(model_path)
-        elif model_type(model_path) == "transformer":
+        elif self._model_type == "transformer":
             self._models[model_path] = sentence_transformers.SentenceTransformer(
                 model_path
             )
@@ -72,6 +71,55 @@ class MatchManager(AbstractSimilarityMethod):
     def set_current_model(self, model_path):
         self._current_model["model"] = self._models[model_path]
         self._current_model["path"] = model_path
+
+    def _match_gensim(self, text_1: str, text_2: str) -> float:
+        text_1 = preprocess(text_1)
+        text_2 = preprocess(text_2)
+        text_1 = [
+            w for w in text_1 if w in self._current_model["model"].wv.index_to_key
+        ]
+        text_2 = [
+            w for w in text_2 if w in self._current_model["model"].wv.index_to_key
+        ]
+        return float(
+            round(
+                self._current_model["model"].wv.n_similarity(text_1, text_2),
+                ROUND_NUMBER,
+            )
+        )
+
+    def _match_transformer(self, text_1: str, text_2: str) -> float:
+        sentences_1 = sent_preprocess(text_1)
+        sentences_2 = sent_preprocess(text_2)
+
+        def comp(e):
+            return e["cos_sim"]
+
+        sentences_2_embeddings = []
+        for sent_2 in sentences_2:
+            sentences_2_embeddings += [
+                self._current_model["model"].encode(sent_2, convert_to_tensor=True)
+            ]
+
+        max_sims = []
+        for sent_1 in sentences_1:
+            sent_1_embedding = self._current_model["model"].encode(
+                sent_1, convert_to_tensor=True
+            )
+            sim = []
+            for i in range(len(sentences_2_embeddings)):
+                sim += [
+                    {
+                        "proj": sentences_2[i],
+                        "cos_sim": float(
+                            sentence_transformers.util.cos_sim(
+                                sent_1_embedding, sentences_2_embeddings[i]
+                            )
+                        ),
+                    }
+                ]
+            max_sims.append(max(sim, key=comp)["cos_sim"])
+        return float(np.round(np.mean(max_sims), ROUND_NUMBER))
 
     def match(self, text_1: str, text_2: str) -> float:
         key = text_1 + text_2 + self._current_model["path"]
@@ -88,53 +136,10 @@ class MatchManager(AbstractSimilarityMethod):
         if cached:
             return cached
 
-        if model_type(self._current_model["path"]) == "gensim":
-            text_1 = preprocess(text_1, punctuation_marks, stop_words, morph)
-            text_2 = preprocess(text_2, punctuation_marks, stop_words, morph)
-            text_1 = [
-                w for w in text_1 if w in self._current_model["model"].wv.index_to_key
-            ]
-            text_2 = [
-                w for w in text_2 if w in self._current_model["model"].wv.index_to_key
-            ]
-            value = float(
-                round(
-                    self._current_model["model"].wv.n_similarity(text_1, text_2),
-                    round_number,
-                )
-            )
-        elif model_type(self._current_model["path"]) == "transformer":
-            sentences_1 = sent_preprocess(text_1)
-            sentences_2 = sent_preprocess(text_2)
-
-            def comp(e):
-                return e["cos_sim"]
-
-            sentences_2_embeddings = []
-            for sent_2 in sentences_2:
-                sentences_2_embeddings += [
-                    self._current_model["model"].encode(sent_2, convert_to_tensor=True)
-                ]
-
-            max_sims = []
-            for sent_1 in sentences_1:
-                sent_1_embedding = self._current_model["model"].encode(
-                    sent_1, convert_to_tensor=True
-                )
-                sim = []
-                for i in range(len(sentences_2_embeddings)):
-                    sim += [
-                        {
-                            "proj": sentences_2[i],
-                            "cos_sim": float(
-                                sentence_transformers.util.cos_sim(
-                                    sent_1_embedding, sentences_2_embeddings[i]
-                                )
-                            ),
-                        }
-                    ]
-                max_sims.append(max(sim, key=comp)["cos_sim"])
-            value = float(np.round(np.mean(max_sims), round_number))
+        if self._model_type == "gensim":
+            value = self._match_gensim(text_1, text_2)
+        elif self._model_type == "transformer":
+            value = self._match_transformer(text_1, text_2)
         self._cache[key] = value
         return value
 
@@ -189,6 +194,6 @@ class MatchManager(AbstractSimilarityMethod):
                 res["tprs"] = tprs
                 res["fprs"] = fprs
                 res["cutoff"] = cutoff
-                res["auc"] = round(roc_auc, round_number)
+                res["auc"] = round(roc_auc, ROUND_NUMBER)
                 res["preds"] = preds
                 return res

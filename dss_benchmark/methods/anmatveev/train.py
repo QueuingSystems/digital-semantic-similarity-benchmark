@@ -4,14 +4,14 @@ from timeit import default_timer as timer
 import cachetools
 import gensim
 import pandas as pd
-from dss_benchmark.common import *
 from dss_benchmark.common import EmptyMapping
+from dss_benchmark.common.preprocess import preprocess
 
-__all__ = ["TrainModelParams", "TrainModelManager"]
+__all__ = ["ANMTrainModelParams", "ANMTrainModelManager"]
 
 
 @dataclass
-class TrainModelParams:
+class ANMTrainModelParams:
     texts: str = field(
         default=None, metadata={"help": "Обучающий набор (путь к файлу)"}
     )
@@ -124,9 +124,9 @@ class TrainModelParams:
     )
 
 
-class TrainModelManager:
+class ANMTrainModelManager:
     def __init__(
-        self, params=TrainModelParams, verbose=False, cache: cachetools.Cache = None
+        self, params=ANMTrainModelParams, verbose=False, cache: cachetools.Cache = None
     ):
         self.params = params
         if cache is None:
@@ -139,9 +139,7 @@ class TrainModelManager:
     ) -> pd.DataFrame:
         # for preprocessing dataset. Use it only in critical cases cause it's too slow on big datasets
         data_df["preprocessed_" + text_field] = data_df.apply(
-            lambda row: preprocess(
-                row[text_field], punctuation_marks, stop_words, morph
-            ),
+            lambda row: preprocess(row[text_field]),
             axis=1,
         )
         data_df_preprocessed = data_df.copy()

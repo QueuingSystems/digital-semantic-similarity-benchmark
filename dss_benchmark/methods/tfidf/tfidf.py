@@ -1,22 +1,22 @@
 import os
 import pickle
 from dataclasses import dataclass, field
+from typing import List
 
 import cachetools
 import pandas as pd
 from dss_benchmark.common import EmptyMapping
+from dss_benchmark.common.preprocess import TextPreprocessor1
 from dss_benchmark.methods import AbstractSimilarityMethod
 from numpy import dot
 from numpy.linalg import norm
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from .preproccessing import TextPreprocessor
-
-__all__ = ["TfIdfParams", "TfIdf"]
+__all__ = ["TfIdfMatcherParams", "TfIdfMatcher"]
 
 
 @dataclass
-class TfIdfParams:
+class TfIdfMatcherParams:
     train_data: str = field(
         default="all_examples",
         metadata={
@@ -31,10 +31,10 @@ class TfIdfParams:
     )
 
 
-class TfIdf(AbstractSimilarityMethod):
+class TfIdfMatcher(AbstractSimilarityMethod):
     def __init__(
         self,
-        params: TfIdfParams,
+        params: TfIdfMatcherParams,
         verbose=False,
         cache: cachetools.Cache = None,
     ):
@@ -43,15 +43,15 @@ class TfIdf(AbstractSimilarityMethod):
             cache = EmptyMapping()
         self._cache = cache
         self._verbose = verbose
-        self.names = {
+        self._names = {
             "rpd_dataset": "rpd_dataset.json",
             "all_examples": "all_examples.json",
             "studentor_partner": "studentor_partner.csv",
             "dataset_v6_r30": "dataset_v6_r30.csv",
         }
-        self.lema = TextPreprocessor()
-        os.makedirs("models/", exist_ok=True)
-        self.info = (
+        self._preprocessor = TextPreprocessor1()
+        os.makedirs("_output/models/", exist_ok=True)
+        self._info = (
             "tfidf (train dataset {} ngram ({},{}) binary {} sublinear {})".format(
                 params.train_data,
                 self.params.min_ngram,
@@ -60,8 +60,8 @@ class TfIdf(AbstractSimilarityMethod):
                 str(self.params.sublinear_tf),
             )
         )
-        self.name_model = (
-            "models/tfidf_train_{}_ngram_{}_{}_bin_{}_sublinear_{}.pickle".format(
+        self._name_model = (
+            "_output/models/tfidf_train_{}_ngram_{}_{}_bin_{}_sublinear_{}.pickle".format(
                 self.params.train_data,
                 self.params.min_ngram,
                 self.params.max_ngram,
@@ -69,54 +69,51 @@ class TfIdf(AbstractSimilarityMethod):
                 self.params.sublinear_tf,
             )
         )
-        if not os.path.exists(self.name_model):
-            self.tfidf = TfidfVectorizer(
+        if not os.path.exists(self._name_model):
+            self._tfidf = TfidfVectorizer(
                 ngram_range=(self.params.min_ngram, self.params.max_ngram),
                 binary=self.params.binary,
                 sublinear_tf=self.params.sublinear_tf,
             )
-            bow_rep_tfidf = self.tfidf.fit_transform(
-                self.get_data(self.params.train_data)
+            bow_rep_tfidf = self._tfidf.fit_transform(
+                self._get_data(self.params.train_data)
             )
-            pickle.dump(self.tfidf, open(self.name_model, "wb"))
+            pickle.dump(self._tfidf, open(self._name_model, "wb"))
         else:
-            self.tfidf = pickle.load(open(self.name_model, "rb"))
+            self._tfidf = pickle.load(open(self._name_model, "rb"))
 
     def match(self, text_1: str, text_2: str) -> float:
-        a = self.get_transform_data(text_1)
-        b = self.get_transform_data(text_2)
+        a = self._get_transform_data(text_1)
+        b = self._get_transform_data(text_2)
         if norm(a) * norm(b) == 0:
             return 0
         return dot(a, b) / (norm(a) * norm(b)) * 100
 
-    def get_data(self, name: str):
-        name = self.conver_name(name)
+    def _get_data(self, name: str):
+        name = self._convert_name(name)
         if not os.path.exists("data/prep_" + name):
-            self.proccess_data_set(name)
-        df = self.read_data(name)
-        field = self.get_conf_data(name)
+            self._proccess_data_set(name)
+        df = self._read_data(name)
+        field = self._get_conf_data(name)
         data = [*df[field[0]].to_numpy(), *df[field[1]].to_numpy()]
         return data
 
-    def proccess_data_set(self, name: str):
+    def _proccess_data_set(self, name: str):
         format = name.split(".")[-1]
-        df = self.read_data(name)
-        field = self.get_conf_data(name)
+        df = self._read_data(name)
+        field = self._get_conf_data(name)
         for col in field:
-            df[col] = df[col].apply(lambda x: self.lema.preprocess_text(x))
+            df[col] = df[col].apply(lambda x: self._preprocessor.preprocess_text(x))
         if format == "json":
             df.to_json("data/prep_" + name)
         elif format == "csv":
             df.to_csv("data/prep_" + name)
 
-    def get_transform_data(self, doc):
-        doc = self.lema.preprocess_text(doc)
-        return self.tfidf.transform([doc]).toarray()[0]
+    def _get_transform_data(self, doc):
+        doc = self._preprocessor.preprocess_text(doc)
+        return self._tfidf.transform([doc]).toarray()[0]
 
-    def get_info(self):
-        return self.info
-
-    def get_conf_data(self, name):
+    def _get_conf_data(self, name) -> List[str]:
         if name == "all_examples.json" or name == "all_examples.json":
             return ["text_rp", "text_proj"]
         elif name == "studentor_partner.csv":
@@ -126,7 +123,7 @@ class TfIdf(AbstractSimilarityMethod):
         else:
             return None
 
-    def read_data(self, name):
+    def _read_data(self, name):
         format = name.split(".")[-1]
         dataset = "data/" + name
         if format == "json":
@@ -136,5 +133,5 @@ class TfIdf(AbstractSimilarityMethod):
         else:
             return None
 
-    def conver_name(self, name):
-        return self.names[name]
+    def _convert_name(self, name):
+        return self._names[name]

@@ -1,19 +1,19 @@
 import click
 import pandas as pd
 from dss_benchmark.common import parse_arbitrary_arguments, print_dataclass
-from dss_benchmark.methods.anmatveev.train import TrainModelManager, TrainModelParams
+from dss_benchmark.methods.anmatveev import ANMTrainModelManager, ANMTrainModelParams
 
 __all__ = ["trn"]
 
 
-@click.group("train", help="Обучение: Обучение неглубоких нейросетей")
+@click.group("anm-train", help="Обучение: Обучение неглубоких нейросетей")
 def trn():
     pass
 
 
 @trn.command(help="Описание параметров")
 def params():
-    print_dataclass(TrainModelParams)
+    print_dataclass(ANMTrainModelParams)
 
 
 @trn.command(
@@ -40,9 +40,9 @@ def params():
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def train_model(model_name, model_path, text, args):
     kwargs = parse_arbitrary_arguments(args)
-    params = TrainModelParams(**kwargs)
+    params = ANMTrainModelParams(**kwargs)
     params.texts = text
-    manager = TrainModelManager(params)
+    manager = ANMTrainModelManager(params)
     manager.train(model=model_name, model_path=model_path)
 
 
@@ -60,7 +60,7 @@ def train_model(model_name, model_path, text, args):
 )
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def preprocess_dataset(path, args):
-    manager = TrainModelManager()
+    manager = ANMTrainModelManager()
     try:
         data = pd.read_json(path)
         new_path = path.replace(".json", "_preprocessed.json")
