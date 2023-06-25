@@ -3,8 +3,7 @@ from dataclasses import dataclass, field
 import cachetools
 import sentence_transformers
 from dss_benchmark.common import EmptyMapping
-
-from .preproccessing import TextPreprocessor
+from dss_benchmark.common.preprocess import TextPreprocessor1
 
 __all__ = ["TransformersParams", "Transformers"]
 
@@ -29,7 +28,7 @@ class Transformers:
             cache = EmptyMapping()
         self._cache = cache
         self._verbose = verbose
-        self.lema = TextPreprocessor()
+        self.lema = TextPreprocessor1()
         self.model = sentence_transformers.SentenceTransformer(self.params.model)
         self.info = "Transfomers {}".format(self.model)
 

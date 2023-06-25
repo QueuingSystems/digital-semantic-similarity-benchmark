@@ -1,5 +1,5 @@
 import click
-from dss_benchmark.cli.experiments import benchmarks, gptme, kwme, tfidfe
+from dss_benchmark.cli.experiments import benchmarks, gptme, gt, kwme, tfidfe
 from dss_benchmark.cli.methods import gpt, kwm, mch, rsch, tfidf_, trn
 
 __all__ = ["cli"]
@@ -17,6 +17,7 @@ cli.add_command(gptme)
 cli.add_command(gpt)
 cli.add_command(tfidf_)
 cli.add_command(tfidfe)
+cli.add_command(gt)
 
 cli.add_command(trn)
 cli.add_command(mch)

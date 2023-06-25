@@ -2,7 +2,6 @@ import dataclasses
 import os
 
 import click
-import pandas as pd
 from dss_benchmark.common import (
     append_to_csv,
     init_cache,
@@ -30,6 +29,8 @@ from dss_benchmark.methods.keyword_matching import (
     KeywordDistanceMatcher,
     KwDistanceMatcherParams,
 )
+
+from .common import print_results
 
 __all__ = ["kwme"]
 
@@ -65,29 +66,7 @@ def match(dataset_name, cutoff, args):
     print_dataclass(params)
     matcher = KeywordDistanceMatcher(params, cache=cache)
     results = kwm_match(matcher, cutoff, dataset, verbose=True)
-
-    df = pd.DataFrame(
-        [
-            {
-                "title_1": result.datum.title_1,
-                "title_2": result.datum.title_2,
-                "value": result.value,
-                "need_match": result.datum.need_match,
-                "match": result.match,
-            }
-            for result in results
-        ]
-    )
-    print(df)
-
-    tp, fp, fn, tn = confusion_matrix(results)
-    f1 = f1_score(tp, fp, fn)
-
-    print(f"TP: {str(tp):3s} FP: {str(fp):3s}")
-    print(f"FN: {str(fn):3s} TN: {str(tn):3s}")
-    print(
-        f"F1: {f1:.4f}, precision: {tp / (tp + fp):.4f}, recall: {tp / (tp + fn):.4f}"
-    )
+    print_results(results, dataset)
 
 
 @kwme.command(
