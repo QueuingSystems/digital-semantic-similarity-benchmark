@@ -1,3 +1,5 @@
+import hashlib
+import os
 from typing import List
 
 import pandas as pd
@@ -12,6 +14,11 @@ from dss_benchmark.experiments.common import (
     process_roc_auc,
 )
 from dss_benchmark.experiments.keyword_matching import kwm_match_parallel
+from dss_benchmark.methods.anmatveev import (
+    ANMMatchManager,
+    ANMTrainModelManager,
+    ANMTrainModelParams,
+)
 from dss_benchmark.methods.chatgpt import GPTMatcher, GPTMatcherParams
 from dss_benchmark.methods.keyword_matching import (
     KeywordDistanceMatcher,
@@ -21,12 +28,46 @@ from dss_benchmark.methods.tfidf.tfidf import TfIdfMatcher, TfIdfMatcherParams
 
 __all__ = ["do_grand_total"]
 
-MODELS = {"keywords": KeywordDistanceMatcher, "gpt": GPTMatcher, "tfidf": TfIdfMatcher}
+MODELS = {
+    "keywords": KeywordDistanceMatcher,
+    "gpt": GPTMatcher,
+    "tfidf": TfIdfMatcher,
+    "word2vec": ANMMatchManager,
+    "fastText": ANMMatchManager,
+}
 
 GPT_SHOTS = {
     "all_examples": [(13, 100), (28, 100)],
     "studentor_partner": [(18, 90), (110, 100)],
     "dataset_v6_r30": [],
+}
+
+TRAINING_TEXTS = "data/documents_preprocessed.json"
+BEST_TRAINING_PARAMS = {
+    "all_examples": {
+        "fastText": ANMTrainModelParams(
+            sg=1, window=15, epochs=6, min_count=5, vector_size=50, min_n=3, max_n=6
+        ),
+        "word2vec": ANMTrainModelParams(
+            sg=1, window=30, epochs=8, min_count=5, vector_size=50
+        ),
+    },
+    "studentor_partner": {
+        "fastText": ANMTrainModelParams(
+            sg=1, window=10, epochs=5, min_count=5, vector_size=50, min_n=3, max_n=6
+        ),
+        "word2vec": ANMTrainModelParams(
+            sg=1, window=15, epochs=5, min_count=6, vector_size=50
+        ),
+    },
+    "dataset_v6_r30": {
+        "fastText": ANMTrainModelParams(
+            sg=1, window=15, epochs=5, min_count=5, vector_size=50, min_n=3, max_n=6
+        ),
+        "word2vec": ANMTrainModelParams(
+            sg=1, window=30, epochs=8, min_count=5, vector_size=50
+        ),
+    },
 }
 
 BEST_PARAMS = {
@@ -50,7 +91,7 @@ BEST_PARAMS = {
             max_ngram=1,
             binary=False,
             sublinear_tf=False,
-        )
+        ),
     },
     "studentor_partner": {
         "keywords": KwDistanceMatcherParams(
@@ -72,7 +113,7 @@ BEST_PARAMS = {
             max_ngram=3,
             binary=False,
             sublinear_tf=False,
-        )
+        ),
     },
     "dataset_v6_r30": {
         "keywords": KwDistanceMatcherParams(
@@ -94,20 +135,42 @@ BEST_PARAMS = {
             max_ngram=1,
             binary=False,
             sublinear_tf=False,
-        )
+        ),
     },
 }
 
 
+def _prepare_anns():
+    for dataset in BEST_TRAINING_PARAMS.keys():
+        for model in ["word2vec", "fastText"]:
+            params = BEST_TRAINING_PARAMS[dataset][model]
+            params.texts = TRAINING_TEXTS
+            params_hash = hashlib.md5(str(params).encode()).hexdigest()
+            model_path = f"_output/models/{model}-{params_hash}"
+            if not os.path.exists(model_path):
+                os.makedirs(os.path.dirname(model_path), exist_ok=True)
+                print(f"Training {model} for {dataset}")
+                trainer = ANMTrainModelManager(params)
+                trainer.train(model, model_path)
+
+
 def _do_match(dataset_name: str, model_name: str, cache, verbose=False):
-    params = BEST_PARAMS[dataset_name][model_name]
+    params = BEST_PARAMS[dataset_name].get(model_name, None)
     dataset = load_dataset(dataset_name)
     if model_name == "keywords":
         return kwm_match_parallel(params, 0, dataset, verbose=verbose)
-    Model = MODELS[model_name]
+    if model_name in ["word2vec", "fastText"]:
+        train_params = BEST_TRAINING_PARAMS[dataset_name][model_name]
+        train_params.texts = TRAINING_TEXTS
+        train_params_hash = hashlib.md5(str(train_params).encode()).hexdigest()
+        model_path = f"_output/models/{model_name}-{train_params_hash}"
+        matcher = ANMMatchManager(model_path, train_params, cache=cache)
+        matcher.set_current_model(model_path)
+    else:
+        Model = MODELS[model_name]
+        matcher = Model(params, cache=cache)
 
     result: List[ResultDatum] = []
-    matcher = Model(params, cache=cache)
 
     if model_name == "gpt":
         shots = GPT_SHOTS.get(dataset_name, [])
@@ -179,6 +242,7 @@ def _process_results(results: List[ResultDatum], dataset_name: str):
 def do_grand_total():
     results = []
     cache = init_cache()
+    _prepare_anns()
     dataset_names = list(BEST_PARAMS.keys())
     for dataset_name in dataset_names:
         print(f"Dataset: {dataset_name}")

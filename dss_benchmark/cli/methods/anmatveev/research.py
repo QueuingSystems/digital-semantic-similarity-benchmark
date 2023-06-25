@@ -13,7 +13,7 @@ PARAMS_SEQUENCE_WORD2VEC = ["window", "epochs", "sg", "min_count", "vector_size"
 PARAMS_SEQUENCE_FASTTEXT = PARAMS_SEQUENCE_WORD2VEC[:] + ["min_n-max_n"]
 
 
-@click.group("research", help="Сопоставление и исследование")
+@click.group("anm-research", help="Сопоставление и исследование")
 def rsch():
     pass
 

@@ -5,16 +5,15 @@ import pandas as pd
 from dss_benchmark.common import parse_arbitrary_arguments
 from dss_benchmark.methods.anmatveev import (
     ANMMatchManager,
-    ParamsParser,
     ANMPlotManager,
     ANMTrainModelParams,
-    model_type
+    ParamsParser,
 )
 
 __all__ = ["mch"]
 
 
-@click.group("match", help="Сопоставление и исследование")
+@click.group("anm-match", help="Сопоставление и исследование")
 def mch():
     pass
 
@@ -25,6 +24,14 @@ def mch():
 )
 @click.option(
     "-mp", "--model_path", required=True, type=str, help="Путь к модели", prompt=True
+)
+@click.option(
+    "-mt",
+    "--model_type",
+    required=True,
+    type=click.Choice(["gensim", "transformer"]),
+    help="Тип модели",
+    prompt=True,
 )
 @click.option(
     "-t", "--texts", required=True, type=str, help="Путь к бенчмарку", prompt=True
@@ -40,15 +47,14 @@ def mch():
     prompt=True,
 )
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def max_f1(model_path, texts, text1, text2, im_prefix, args):
-    model_type_ = model_type(model_path)
+def max_f1(model_path, model_type, texts, text1, text2, im_prefix, args):
     benchmark = None
     res = None
     if ".json" in texts:
         benchmark = pd.read_json(texts)
     elif ".csv" in texts:
         benchmark = pd.read_csv(texts)
-    if model_type_ == "gensim":
+    if model_type == "gensim":
         kwargs = parse_arbitrary_arguments(args)
         params = ANMTrainModelParams(**kwargs)
         manager = ANMMatchManager(model_path, params)
@@ -82,7 +88,7 @@ def max_f1(model_path, texts, text1, text2, im_prefix, args):
         res["max_n"] = params.max_n
         plotManager.add_plot(res)
         plotManager.save(im_prefix + imname)
-    elif model_type_ == "transformer":
+    elif model_type == "transformer":
         model = Path(model_path).stem
         if model.lower().startswith("paraphrase-multilingual"):
             model = "multilingual"

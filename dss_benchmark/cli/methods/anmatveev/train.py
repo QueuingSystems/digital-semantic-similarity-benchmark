@@ -6,7 +6,7 @@ from dss_benchmark.methods.anmatveev import ANMTrainModelManager, ANMTrainModelP
 __all__ = ["trn"]
 
 
-@click.group("train", help="Обучение: Обучение неглубоких нейросетей")
+@click.group("anm-train", help="Обучение: Обучение неглубоких нейросетей")
 def trn():
     pass
 

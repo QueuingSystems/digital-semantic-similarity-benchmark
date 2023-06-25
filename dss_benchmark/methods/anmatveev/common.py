@@ -7,7 +7,6 @@ __all__ = [
     "calc_all",
     "calc_tpr_fpr",
     "max_diff_tpr_fpr",
-    "model_type",
 ]
 
 
@@ -95,13 +94,3 @@ def max_diff_tpr_fpr(sim, df, step=0.02):
             print("ZeroDiv")
             pass
     return steps, tprs, fprs, cutoff
-
-
-def model_type(model_path):
-    for model in GENSIM_MODELS:
-        if model.lower() in model_path.lower():
-            return "gensim"
-    for model in TRANSFORMER_MODELS:
-        if model.lower() in model_path.lower():
-            return "transformer"
-    return None
