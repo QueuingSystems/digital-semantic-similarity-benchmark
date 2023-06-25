@@ -2,10 +2,11 @@ from dataclasses import dataclass, field
 
 import cachetools
 import sentence_transformers
-
 from dss_benchmark.common import EmptyMapping
-from dss_benchmark.methods import AbstractSimilarityMethod
-from dss_benchmark.methods.tfidf_transformers import Text_preprocessing
+
+from .preproccessing import TextPreprocessor
+
+__all__ = ["TransformersParams", "Transformers"]
 
 
 @dataclass
@@ -28,7 +29,7 @@ class Transformers:
             cache = EmptyMapping()
         self._cache = cache
         self._verbose = verbose
-        self.lema = Text_preprocessing()
+        self.lema = TextPreprocessor()
         self.model = sentence_transformers.SentenceTransformer(self.params.model)
         self.info = "Transfomers {}".format(self.model)
 

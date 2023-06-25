@@ -1,8 +1,10 @@
 from nltk.corpus import stopwords
 from pymystem3 import Mystem
 
+__all__ = ["TextPreprocessor"]
 
-class Text_preprocessing:
+
+class TextPreprocessor:
     def __init__(self):
         self.mystem = Mystem()
         self.russian_stopwords = set(stopwords.words("russian"))

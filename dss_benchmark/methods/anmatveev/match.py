@@ -10,12 +10,11 @@ import numpy as np
 import pandas as pd
 import pymorphy2
 import sentence_transformers
-from nltk.corpus import stopwords
-from sklearn.metrics import auc
-
 from dss_benchmark.common import *
 from dss_benchmark.common.preprocess.anmatveev.common import *
 from dss_benchmark.methods import AbstractSimilarityMethod
+from nltk.corpus import stopwords
+from sklearn.metrics import auc
 
 __all__ = ["MatchManager"]
 

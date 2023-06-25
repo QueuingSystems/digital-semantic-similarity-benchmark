@@ -1,8 +1,7 @@
+from dss_benchmark.common import tqdm_v
 from fuzzysearch import find_near_matches
 from sklearn.base import BaseEstimator, ClassifierMixin
 from thefuzz import fuzz
-
-from dss_benchmark.common import tqdm_v
 
 __all__ = ["CombinedRatioMatcher"]
 

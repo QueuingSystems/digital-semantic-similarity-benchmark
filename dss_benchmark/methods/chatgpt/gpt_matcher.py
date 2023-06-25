@@ -10,7 +10,6 @@ import backoff
 import cachetools
 import openai
 import tiktoken
-
 from dss_benchmark.common import limit_array
 from dss_benchmark.methods import AbstractSimilarityMethod
 

@@ -1,8 +1,9 @@
 import click
-
 from dss_benchmark.common import parse_arbitrary_arguments, print_dataclass
 from dss_benchmark.methods.tfidf_transformers.transormers import (
-    Transformers, TransformersParams)
+    Transformers,
+    TransformersParams,
+)
 
 __all__ = ["tranformes"]
 

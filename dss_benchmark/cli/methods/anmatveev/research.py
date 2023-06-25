@@ -4,7 +4,6 @@ from pathlib import Path
 
 import click
 import pandas as pd
-
 from dss_benchmark.common import parse_arbitrary_arguments
 from dss_benchmark.methods.anmatveev.match import *
 from dss_benchmark.methods.anmatveev.params_parser import *

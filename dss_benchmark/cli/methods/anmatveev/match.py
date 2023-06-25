@@ -2,10 +2,8 @@ from pathlib import Path
 
 import click
 import pandas as pd
-
 from dss_benchmark.common import parse_arbitrary_arguments, print_dataclass
-from dss_benchmark.common.preprocess.anmatveev.common import (gensim_models,
-                                                              model_type)
+from dss_benchmark.common.preprocess.anmatveev.common import gensim_models, model_type
 from dss_benchmark.methods.anmatveev import TrainModelParams
 from dss_benchmark.methods.anmatveev.match import MatchManager
 from dss_benchmark.methods.anmatveev.params_parser import ParamsParser

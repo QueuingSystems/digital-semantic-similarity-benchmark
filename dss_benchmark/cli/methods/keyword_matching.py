@@ -1,8 +1,9 @@
 import click
-
 from dss_benchmark.common import parse_arbitrary_arguments, print_dataclass
-from dss_benchmark.methods.keyword_matching import (KeywordDistanceMatcher,
-                                                    KwDistanceMatcherParams)
+from dss_benchmark.methods.keyword_matching import (
+    KeywordDistanceMatcher,
+    KwDistanceMatcherParams,
+)
 
 __all__ = ["kwm"]
 

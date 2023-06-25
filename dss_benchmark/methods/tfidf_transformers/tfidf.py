@@ -4,13 +4,15 @@ from dataclasses import dataclass, field
 
 import cachetools
 import pandas as pd
+from dss_benchmark.common import EmptyMapping
+from dss_benchmark.methods import AbstractSimilarityMethod
 from numpy import dot
 from numpy.linalg import norm
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from dss_benchmark.common import EmptyMapping
-from dss_benchmark.methods import AbstractSimilarityMethod
-from dss_benchmark.methods.tfidf_transformers import Text_preprocessing
+from .preproccessing import TextPreprocessor
+
+__all__ = ["TfIdfParams", "TfIdf"]
 
 
 @dataclass
@@ -47,7 +49,7 @@ class TfIdf(AbstractSimilarityMethod):
             "studentor_partner": "studentor_partner.csv",
             "dataset_v6_r30": "dataset_v6_r30.csv",
         }
-        self.lema = Text_preprocessing()
+        self.lema = TextPreprocessor()
         os.makedirs("models/", exist_ok=True)
         self.info = (
             "tfidf (train dataset {} ngram ({},{}) binary {} sublinear {})".format(

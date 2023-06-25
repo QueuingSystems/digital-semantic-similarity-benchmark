@@ -1,6 +1,5 @@
 import click
 import numpy as np
-
 from dss_benchmark.experiments import DATASETS, load_dataset
 
 __all__ = ["benchmarks"]

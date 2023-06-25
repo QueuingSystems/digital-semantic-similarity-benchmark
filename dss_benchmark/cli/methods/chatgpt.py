@@ -1,7 +1,5 @@
 import click
-
-from dss_benchmark.common import (init_cache, parse_arbitrary_arguments,
-                                  print_dataclass)
+from dss_benchmark.common import init_cache, parse_arbitrary_arguments, print_dataclass
 from dss_benchmark.methods.chatgpt import GPTMatcher, GPTMatcherParams
 
 __all__ = ["gpt"]

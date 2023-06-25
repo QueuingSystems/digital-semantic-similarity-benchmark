@@ -1,22 +1,21 @@
 import click
-
 from dss_benchmark.common import parse_arbitrary_arguments, print_dataclass
 from dss_benchmark.methods.tfidf_transformers.tfidf import TfIdf, TfIdfParams
 
-__all__ = ["tfidf"]
+__all__ = ["tfidf_"]
 
 
 @click.group("tfidf", help="Методы: Сопоставление текстов при помощи метода tfidf")
-def tfidf():
+def tfidf_():
     pass
 
 
-@tfidf.command(help="Описание параметров")
+@tfidf_.command(help="Описание параметров")
 def params():
     print_dataclass(TfIdfParams)
 
 
-@tfidf.command(
+@tfidf_.command(
     help="Сматчить 2 текста", context_settings=dict(ignore_unknown_options=True)
 )
 @click.option("-t1", "--text1", required=True, type=str, help="Текст 1", prompt=True)

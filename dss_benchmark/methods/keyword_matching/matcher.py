@@ -6,18 +6,21 @@ import numpy as np
 import pke
 import spacy
 import tabulate
-from sklearn.cluster import DBSCAN
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.pipeline import Pipeline
-
 from dss_benchmark.common import EmptyMapping
 from dss_benchmark.common.preprocess import TextNormalizer, TextSnowballStemmer
 from dss_benchmark.methods import AbstractSimilarityMethod
-from dss_benchmark.methods.keyword_matching.distance import \
-    CombinedRatioMatcherCache
+from dss_benchmark.methods.keyword_matching.distance import CombinedRatioMatcherCache
 from dss_benchmark.methods.keyword_matching.keywords import (
-    KeywordsClusterNew, KeywordsExcludeBlacklist, KeywordsExcludeRussian,
-    KwWindowExtractor, MultipleExtractor, PkeExtractor)
+    KeywordsClusterNew,
+    KeywordsExcludeBlacklist,
+    KeywordsExcludeRussian,
+    KwWindowExtractor,
+    MultipleExtractor,
+    PkeExtractor,
+)
+from sklearn.cluster import DBSCAN
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import Pipeline
 
 __all__ = ["KeywordDistanceMatcher", "KwDistanceMatcherParams"]
 
