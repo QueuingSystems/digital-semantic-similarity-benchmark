@@ -177,3 +177,4 @@ pyrightconfig.json
 /_output/
 /data/prep_all_examples.json
 /data/documents_preprocessed.json
+/mprofile_*dat

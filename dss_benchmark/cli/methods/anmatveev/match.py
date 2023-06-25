@@ -122,6 +122,14 @@ def max_f1(model_path, model_type, texts, text1, text2, im_prefix, args):
 @click.option("-t1", "--text1", required=True, type=str, help="Поле 1", prompt=True)
 @click.option("-t2", "--text2", required=True, type=str, help="Поле 2", prompt=True)
 @click.option(
+    "-mt",
+    "--model_type",
+    required=True,
+    type=click.Choice(["gensim", "transformer"]),
+    help="Тип модели",
+    prompt=True,
+)
+@click.option(
     "-imp",
     "--im_prefix",
     required=True,
@@ -130,15 +138,14 @@ def max_f1(model_path, model_type, texts, text1, text2, im_prefix, args):
     prompt=True,
 )
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def roc_auc(model_path, texts, text1, text2, im_prefix, args):
-    model_type_ = model_type(model_path)
+def roc_auc(model_path, texts, text1, text2, model_type, im_prefix, args):
     benchmark = None
     if ".json" in texts:
         benchmark = pd.read_json(texts)
     elif ".csv" in texts:
         benchmark = pd.read_csv(texts)
     res = None
-    if model_type_ == "gensim":
+    if model_type == "gensim":
         kwargs = parse_arbitrary_arguments(args)
         params = ANMTrainModelParams(**kwargs)
         manager = ANMMatchManager(model_path, params=params)
@@ -173,7 +180,7 @@ def roc_auc(model_path, texts, text1, text2, im_prefix, args):
         res["max_n"] = params.max_n
         plotManager.add_plot(res)
         plotManager.save(im_prefix + imname)
-    elif model_type_ == "transformer":
+    elif model_type == "transformer":
         model = Path(model_path).stem
         if model.lower().startswith("paraphrase-multilingual"):
             model = "multilingual"
