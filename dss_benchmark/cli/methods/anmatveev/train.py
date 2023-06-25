@@ -1,7 +1,7 @@
 import click
 import pandas as pd
 from dss_benchmark.common import parse_arbitrary_arguments, print_dataclass
-from dss_benchmark.methods.anmatveev.train import TrainModelManager, TrainModelParams
+from dss_benchmark.methods.anmatveev import TrainModelManager, TrainModelParams
 
 __all__ = ["trn"]
 

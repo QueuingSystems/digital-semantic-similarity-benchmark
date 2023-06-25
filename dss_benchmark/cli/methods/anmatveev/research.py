@@ -5,10 +5,7 @@ from pathlib import Path
 import click
 import pandas as pd
 from dss_benchmark.common import parse_arbitrary_arguments
-from dss_benchmark.methods.anmatveev.match import *
-from dss_benchmark.methods.anmatveev.params_parser import *
-from dss_benchmark.methods.anmatveev.plot import *
-from dss_benchmark.methods.anmatveev.train import *
+from dss_benchmark.methods.anmatveev import TrainModelParams, TrainModelManager, MatchManager, PlotManager
 
 __all__ = ["rsch"]
 
@@ -97,7 +94,7 @@ def train_cascade(
     new_group = False
     current_group = 0
     plotManager = None
-    imname = None
+    imname: str = None
     for index, row in scenario.iterrows():
 
         if row["group"] != current_group:

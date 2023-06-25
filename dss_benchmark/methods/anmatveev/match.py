@@ -1,24 +1,21 @@
-import random
-from dataclasses import dataclass, field
 from pathlib import Path
 from timeit import default_timer as timer
 
 import cachetools
-import gensim
 import gensim.models as models
 import numpy as np
 import pandas as pd
-import pymorphy2
 import sentence_transformers
-from dss_benchmark.common import *
-from dss_benchmark.common.preprocess.anmatveev.common import *
+from dss_benchmark.common import init_cache
+from dss_benchmark.common.preprocess import preprocess, sent_preprocess
 from dss_benchmark.methods import AbstractSimilarityMethod
-from nltk.corpus import stopwords
 from sklearn.metrics import auc
+
+from .common import calc_all, max_diff_tpr_fpr, max_f1_score, model_type
 
 __all__ = ["MatchManager"]
 
-round_number = 3
+ROUND_NUMBER = 3
 
 
 class MatchManager(AbstractSimilarityMethod):
@@ -42,17 +39,13 @@ class MatchManager(AbstractSimilarityMethod):
         data_df_preprocessed[
             "preprocessed_" + text_field_1
         ] = data_df_preprocessed.apply(
-            lambda row: preprocess(
-                row[text_field_1], punctuation_marks, stop_words, morph
-            ),
+            lambda row: preprocess(row[text_field_1]),
             axis=1,
         )
         data_df_preprocessed[
             "preprocessed_" + text_field_2
         ] = data_df_preprocessed.apply(
-            lambda row: preprocess(
-                row[text_field_2], punctuation_marks, stop_words, morph
-            ),
+            lambda row: preprocess(row[text_field_2]),
             axis=1,
         )
         data_df_preprocessed = data_df_preprocessed.drop(
@@ -89,8 +82,8 @@ class MatchManager(AbstractSimilarityMethod):
             return cached
 
         if model_type(self._current_model["path"]) == "gensim":
-            text_1 = preprocess(text_1, punctuation_marks, stop_words, morph)
-            text_2 = preprocess(text_2, punctuation_marks, stop_words, morph)
+            text_1 = preprocess(text_1)
+            text_2 = preprocess(text_2)
             text_1 = [
                 w for w in text_1 if w in self._current_model["model"].wv.index_to_key
             ]
@@ -100,7 +93,7 @@ class MatchManager(AbstractSimilarityMethod):
             value = float(
                 round(
                     self._current_model["model"].wv.n_similarity(text_1, text_2),
-                    round_number,
+                    ROUND_NUMBER,
                 )
             )
         elif model_type(self._current_model["path"]) == "transformer":
@@ -134,7 +127,7 @@ class MatchManager(AbstractSimilarityMethod):
                         }
                     ]
                 max_sims.append(max(sim, key=comp)["cos_sim"])
-            value = float(np.round(np.mean(max_sims), round_number))
+            value = float(np.round(np.mean(max_sims), ROUND_NUMBER))
         self._cache[key] = value
         return value
 
@@ -189,6 +182,6 @@ class MatchManager(AbstractSimilarityMethod):
                 res["tprs"] = tprs
                 res["fprs"] = fprs
                 res["cutoff"] = cutoff
-                res["auc"] = round(roc_auc, round_number)
+                res["auc"] = round(roc_auc, ROUND_NUMBER)
                 res["preds"] = preds
                 return res
