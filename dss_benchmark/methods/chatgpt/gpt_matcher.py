@@ -112,10 +112,10 @@ class GPTMatcher(AbstractSimilarityMethod):
             openai.error.APIConnectionError,
             openai.error.InvalidRequestError,
             openai.error.RateLimitError,
-            openai.error.ServiceUnavailableError
+            openai.error.ServiceUnavailableError,
         ),
         max_tries=3,
-        on_backoff=_backoff_hdlr
+        on_backoff=_backoff_hdlr,
     )
     def _get_result(self, messages):
         if self.verbose:

@@ -26,14 +26,12 @@ def params():
 )
 @click.option("-t1", "--text1", required=True, type=str, help="Текст 1", prompt=True)
 @click.option("-t2", "--text2", required=True, type=str, help="Текст 1", prompt=True)
-@click.argument(
-    "args", nargs=-1, type=click.UNPROCESSED
-)
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def match(text1, text2, args):
     kwargs = parse_arbitrary_arguments(args)
     params = KwDistanceMatcherParams(**kwargs)
     print_dataclass(params)
-    
+
     matcher = KeywordDistanceMatcher(params, verbose=True)
     result = matcher.match(text1, text2)
-    print(f'\nСходство: {result}')
+    print(f"\nСходство: {result}")

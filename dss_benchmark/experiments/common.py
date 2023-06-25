@@ -15,14 +15,13 @@ __all__ = [
     "f1_score",
     "process_roc_auc",
     "process_f1_score",
-    "process_auprc"
+    "process_auprc",
 ]
 
 
 DATASETS = ["rpd_dataset", "all_examples", "studentor_partner"]
 
 DATASETS = ["rpd_dataset", "all_examples", "studentor_partner", "dataset_v6_r30"]
-
 
 
 @dataclass
@@ -55,8 +54,8 @@ def load_dataset(name: str) -> List[Datum]:
             )
             for datum in data
         ]
-    if name == 'studentor_partner':
-        with open (f"./data/{name}.csv", "r") as f:
+    if name == "studentor_partner":
+        with open(f"./data/{name}.csv", "r") as f:
             reader = csv.DictReader(f)
             data = list(reader)
         return [
@@ -65,22 +64,22 @@ def load_dataset(name: str) -> List[Datum]:
                 text_2=datum["text_2"],
                 title_1=datum["title_1"],
                 title_2=datum["title_2"],
-                need_match=datum["need_match"] == 'TRUE'
+                need_match=datum["need_match"] == "TRUE",
             )
             for datum in data
         ]
 
-    if name == 'dataset_v6_r30':
-        with open (f"./data/{name}.csv", "r") as f:
+    if name == "dataset_v6_r30":
+        with open(f"./data/{name}.csv", "r") as f:
             reader = csv.DictReader(f)
             data = list(reader)
         return [
             Datum(
                 text_1=datum["vacancy"],
                 text_2=datum["resume"],
-                title_1=f'vacancy_{i}',
-                title_2=f'resume_{i}',
-                need_match=datum["result"] == '1'
+                title_1=f"vacancy_{i}",
+                title_2=f"resume_{i}",
+                need_match=datum["result"] == "1",
             )
             for i, datum in enumerate(data)
         ]
@@ -115,6 +114,7 @@ def process_roc_auc(dataset: List[Datum], results: List[ResultDatum]):
     auc = metrics.auc(fpr, tpr)
 
     return fpr, tpr, cutoff, auc
+
 
 def process_auprc(dataset: List[Datum], results: List[ResultDatum]):
     y_true = [int(datum.need_match) for datum in dataset]

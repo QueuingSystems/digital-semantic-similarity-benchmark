@@ -322,8 +322,7 @@ def kwm_experiment(
     df = pd.DataFrame(best_values)
     df.to_csv(f"{results_folder}/kwm_best.csv", index=False)
 
-
-    plt.rcParams['savefig.dpi'] = 300
+    plt.rcParams["savefig.dpi"] = 300
     if dataset_name == "studentor_partner":
         _kwm_auprc_curve(dataset, params, results_folder, verbose)
     else:
@@ -394,13 +393,17 @@ def kwm_process_timings():
     df_changed_resume = pd.read_csv("_output/kwm_times_no_cache_changed_resume.csv")
     df_swapped = pd.read_csv("_output/kwm_times_no_cache_swapped.csv")
 
-def kwm_process_timings(prefix='kwm'):
+
+def kwm_process_timings(prefix="kwm"):
     df_no_cache = pd.read_csv(f"_output/{prefix}_times_no_cache.csv")
     df_cached = pd.read_csv(f"_output/{prefix}_times_cached.csv")
-    df_changed_vacancy = pd.read_csv(f"_output/{prefix}_times_no_cache_changed_vacancy.csv")
-    df_changed_resume = pd.read_csv(f"_output/{prefix}_times_no_cache_changed_resume.csv")
+    df_changed_vacancy = pd.read_csv(
+        f"_output/{prefix}_times_no_cache_changed_vacancy.csv"
+    )
+    df_changed_resume = pd.read_csv(
+        f"_output/{prefix}_times_no_cache_changed_resume.csv"
+    )
     df_swapped = pd.read_csv(f"_output/{prefix}_times_no_cache_swapped.csv")
-
 
     avg_no_cache_process_time = df_no_cache["process_time"].mean()
     avg_cached_process_time = df_cached["process_time"].mean()
@@ -426,7 +429,7 @@ def kwm_process_timings(prefix='kwm'):
         "Avg process time without cache (swapped): ",
         round(avg_swapped_process_time, 5),
     )
-    plt.rcParams['savefig.dpi'] = 300
+    plt.rcParams["savefig.dpi"] = 300
     fig, [ax1, ax2] = plt.subplots(1, 2, figsize=(8, 4))
     df_no_cache[["process_time", "text_2_len"]].plot(
         ax=ax1,
@@ -458,8 +461,6 @@ def kwm_process_timings(prefix='kwm'):
     fig.savefig("_output/kwm_times_no_cache.png")
 
     fig.savefig(f"_output/{prefix}_times_no_cache.png")
-
-
 
 
 def kwm_measure_timings(verbose=False):
@@ -495,7 +496,13 @@ def kwm_measure_timings(verbose=False):
     big_dataset_swapped = []
     for datum in big_dataset:
         big_dataset_swapped.append(
-            Datum(text_1=datum.text_2, text_2=datum.text_1, title_1=datum.title_2, title_2=datum.title_1, need_match=datum.need_match)
+            Datum(
+                text_1=datum.text_2,
+                text_2=datum.text_1,
+                title_1=datum.title_2,
+                title_2=datum.title_1,
+                need_match=datum.need_match,
+            )
         )
     df_swapped = _kwm_measure_time_on_dataset(matcher, big_dataset_swapped, verbose)
     df_swapped.to_csv("_output/kwm_times_no_cache_swapped.csv", index=False)
@@ -507,7 +514,7 @@ def kwm_test_mprof(parallel=False, verbose=False):
         is_window=True, kw_saturation=True, swap_texts=True
     )
     if parallel:
-        kwm_match_parallel(default_params, 0, big_dataset, verbose, 'memory')
+        kwm_match_parallel(default_params, 0, big_dataset, verbose, "memory")
     else:
         matcher = KeywordDistanceMatcher(default_params, False, init_cache("memory"))
         kwm_match(matcher, 0, big_dataset, verbose)

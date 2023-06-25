@@ -87,7 +87,7 @@ def init_cache(kind: Union[str, None] = None):
         return RedisCache(client=redis.Redis(host="localhost", password="12345"))
     elif kind == "memory":
         return cachetools.LFUCache(2**16)
-    elif kind == 'dummy':
+    elif kind == "dummy":
         return EmptyMapping()
     try:
         cache = RedisCache(client=redis.Redis(host="localhost", password="12345"))

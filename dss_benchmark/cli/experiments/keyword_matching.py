@@ -20,7 +20,12 @@ from dss_benchmark.experiments import (
     process_roc_auc,
 )
 from dss_benchmark.experiments.common import process_auprc
-from dss_benchmark.experiments.keyword_matching import kwm_experiment, kwm_measure_timings, kwm_process_timings, kwm_test_mprof
+from dss_benchmark.experiments.keyword_matching import (
+    kwm_experiment,
+    kwm_measure_timings,
+    kwm_process_timings,
+    kwm_test_mprof,
+)
 from dss_benchmark.methods.keyword_matching import (
     KeywordDistanceMatcher,
     KwDistanceMatcherParams,
@@ -118,7 +123,7 @@ def match_auc(dataset_name, csv_path, args):
     print(f"AUC: {auc:.4f} (cutoff: {auc_cutoff:.4f}, F1: {f1:.4f})")
 
     _, _, auprc, auprc_cutoff, auprc_f1 = process_auprc(dataset, results)
-    print(f'AUPRC: {auprc:.4f} (cutoff: {auprc_cutoff:.4f}, F1: {auprc_f1:.4f})')
+    print(f"AUPRC: {auprc:.4f} (cutoff: {auprc_cutoff:.4f}, F1: {auprc_f1:.4f})")
 
     f1, cutoff = process_f1_score(results)
     for r in results:
@@ -182,7 +187,7 @@ def timings():
 
 
 @kwme.command(
-    help='Обработать результаты эксперимента со временем',
+    help="Обработать результаты эксперимента со временем",
 )
 def timings_process():
     kwm_process_timings()
@@ -192,7 +197,7 @@ def timings_process():
     help="Запуск для mprof",
 )
 @click.option(
-    '--parallel/--no-parallel',
+    "--parallel/--no-parallel",
     default=True,
 )
 def test_mprof(parallel):

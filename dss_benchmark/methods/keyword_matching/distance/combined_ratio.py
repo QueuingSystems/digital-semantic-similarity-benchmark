@@ -27,7 +27,7 @@ class CombinedRatioMatcher(BaseEstimator, ClassifierMixin):
         pass
 
     def _get_near_match_distance(self, l, text):
-        text = text[:self.near_match_max_length]
+        text = text[: self.near_match_max_length]
         matches = find_near_matches(l, text, max_l_dist=self.max_l_dist)
         if matches is None or len(matches) == 0:  # type: ignore
             return 0

@@ -33,9 +33,9 @@ def parse_arbitrary_arguments(args):
             except ValueError:
                 pass
 
-        if value == 'true':
+        if value == "true":
             value = True
-        elif value == 'false':
+        elif value == "false":
             value = False
         result[arg] = value
     return result

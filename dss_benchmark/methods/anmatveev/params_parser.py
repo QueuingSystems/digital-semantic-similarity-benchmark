@@ -1,4 +1,3 @@
-
 class ParamsParser:
     def __init__(self, filename=None):
         if filename:
@@ -12,9 +11,9 @@ class ParamsParser:
         i = 1
         for line in self._file.readlines()[read_from:]:
             l = line.strip()
-            if l != '':
+            if l != "":
                 key = l
-                value = [int(i) if i.isdigit() else i for i in l.split('-')]
+                value = [int(i) if i.isdigit() else i for i in l.split("-")]
                 if split_into_groups:
                     d.setdefault(str(i), []).append((key, value))
                 else:
@@ -25,8 +24,7 @@ class ParamsParser:
         return d
 
     def read_one(self, model_name):
-        l = model_name.split('-')[1:]
+        l = model_name.split("-")[1:]
         for i in range(1, len(l)):
             l[i] = int(l[i])
         return tuple(l)
-
